@@ -1,0 +1,66 @@
+{
+  "id": "SAMPLE_RUN",
+  "kind": "run",
+  "name": "Sample Run",
+  "metadata": {
+    "description": "Run sample with mixed movement, interaction, and waits."
+  },
+  "actions": [
+    {
+      "action": "Map.Travel",
+      "kwargs": {
+        "target_map_id": 0,
+        "target_map_name": "${run_outpost_name}"
+      }
+    },
+    {
+      "action": "Move.XYAndExitMap",
+      "args": [
+        -3500,
+        4200
+      ],
+      "kwargs": {
+        "target_map_name": "${run_explorable_name}"
+      }
+    },
+    {
+      "action": "Move.FollowPath",
+      "args": [
+        [
+          [
+            1000,
+            1000
+          ],
+          [
+            1500,
+            1800
+          ],
+          [
+            2200,
+            2100
+          ]
+        ],
+        "Sample fixed path"
+      ]
+    },
+    {
+      "action": "Interact.WithNpcAtXY",
+      "args": [
+        2210.0,
+        2100.0
+      ],
+      "optional": true
+    },
+    {
+      "action": "Wait.UntilOutOfCombat",
+      "optional": true
+    },
+    {
+      "action": "Wait.ForTime",
+      "args": [
+        500
+      ]
+    }
+  ]
+}
+

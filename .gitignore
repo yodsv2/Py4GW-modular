@@ -2,7 +2,7 @@
 accounts.json
 accounts - Copy.json
 Py4GW_Launcher.exe
-
+py4gw_accounts.json
 GodTools.py
 god_tools_src/*
 
@@ -209,3 +209,11 @@ cython_debug/
 
 # macOS system files
 .DS_Store
+
+# Local WIP / generated artifacts (Robin workspace)
+Bots/yods/
+Py4GWCoreLib/botting_src/scenario_src/
+Py4GWCoreLib/botting_src/scenarios/
+Py4GWCoreLib/botting_src/subclases_src/SCENARIOS_src.py
+Widgets/Automation/Bots/Missions/Underworld/Py4GW.ini
+loots.json

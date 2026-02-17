@@ -1,0 +1,16 @@
+{
+  "missions": {
+    "SAMPLE_MISSION": "missions/sample_mission.json"
+  },
+  "quests": {
+    "SAMPLE_QUEST": "quests/sample_quest.json"
+  },
+  "runs": {
+    "SAMPLE_RUN": "runs/sample_run.json"
+  },
+  "vanquishes": {
+    "SAMPLE_VANQUISH": "vanquishes/sample_vanquish.json",
+    "MOUNT_QINKAI": "vanquishes/mount_qinkai.json"
+  }
+}
+
