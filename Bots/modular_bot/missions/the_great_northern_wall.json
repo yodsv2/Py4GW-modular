@@ -4,7 +4,8 @@
     "max_heroes":  4,
     "entry":  {
                   "type":  "enter_challenge",
-                  "delay":  3000
+                  "delay":  4000,
+                  "target_map_id": 28
               },
     "steps":  [
                   {
@@ -109,7 +110,7 @@
                                      [-5739, 18268],
                                      [-3350, 17785],
                                      [-3050, 19476],
-                                     [-2293, 19035]
+                                     [-2337, 19004]
                                  ]
                   },
                   {
@@ -122,13 +123,21 @@
                   },
                   {
                       "type":  "auto_path",
-                      "name":  "To Prince Rurik",
+                      "name":  "To Kilnn",
                       "points":  [
                                      [282, 18305],
                                      [1223, 16793],
                                      [-470, 14762],
                                      [-217, 14295]
                                  ]
+                  },
+                  {
+                      "type":  "interact_nearest_npc",
+                      "ms":  3000
+                  },
+                  {
+                      "type":  "interact_nearest_npc",
+                      "ms":  3000
                   },
                   {
                       "type":  "interact_nearest_npc",

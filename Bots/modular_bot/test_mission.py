@@ -25,14 +25,14 @@ from modular_bot import ModularBot, Phase
 from modular_bot.recipes import Mission
 
 
-def set_hard_mode(bot):
-    bot.Party.SetHardMode(True)
+def set_normal_mode(bot):
+    bot.Party.SetHardMode(False)
 
 
 bot = ModularBot(
     name="Test: Mission",
     phases=[
-        Phase("Set Hard Mode", set_hard_mode),
+        Phase("Set Normal Mode", set_normal_mode),
         Mission("the_great_northern_wall"),
     ],
     loop=False,
