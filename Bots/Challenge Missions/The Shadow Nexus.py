@@ -1,76 +1,75 @@
-from Py4GWCoreLib import Botting, Routines, ConsoleLog
+"""
+The Shadow Nexus — ModularBot conversion.
 
-# https://wiki.guildwars.com/wiki/The_Shadow_Nexus
-BOT_NAME = "The Shadow Nexus"
-OUTPOST_IDS = [
-    450,  # Gate of Torment
-    555,  # The Shadow Nexus
+Demonstrates:
+- loop_to= targeting a specific phase (not the first)
+- on_party_wipe= jumping to a different phase than loop target
+- Challenge mission entry pattern (NPC dialog)
+- Build-time loop for repeated path registration
+"""
+
+import sys, os
+import Py4GW
+
+bots_dir = os.path.join(Py4GW.Console.get_projects_path(), "Bots")
+if bots_dir not in sys.path:
+    sys.path.insert(0, bots_dir)
+
+from Py4GWCoreLib import Botting
+from modular_bot import ModularBot, Phase
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+
+OUTPOST_GATE_OF_TORMENT = 450
+OUTPOST_SHADOW_NEXUS = 555
+
+LOOP_PATH = [
+    (4479, 2496),   (36, 3428),     (-3145, 3648),
+    (-4626, 1563),  (-1938, 1014),  (-4132, -3867),
+    (530, -3812),   (1321, -987),
 ]
-MISSION_IDS = [
-    555,  # The Shadow Nexus
-]
 
-Loop_Path: list[tuple[float, float]] = [
-    (4479, 2496),  # Portal 1
-    (36, 3428),  # Portal 2
-    (-3145, 3648),  # Portal 3
-    (-4626, 1563),  # Portal 4
-    (-1938, 1014),  # Portal 5
-    (-4132, -3867),  # Portal 6
-    (530, -3812),  # Portal 7
-    (1321, -987),  # Portal 8
-    # (2340, -2660),  # Portal 9
-]
+# ── Phases ────────────────────────────────────────────────────────────────────
 
-bot = Botting(BOT_NAME)
-
-
-def bot_routine(bot: Botting) -> None:
-    global Loop_Path
-    condition = lambda: OnPartyWipe(bot)
-    bot.Events.OnPartyWipeCallback(condition)
-    bot.States.AddHeader(BOT_NAME)
-    bot.Templates.Multibox_Aggressive()
+def prepare(bot: Botting):
     bot.Properties.Enable("halt_on_death")
-    bot.Templates.Routines.PrepareForFarm(map_id_to_travel=OUTPOST_IDS[1])
-    bot.States.AddHeader("Start Mission")
+    bot.Map.Travel(target_map_id=OUTPOST_SHADOW_NEXUS)
+
+def start_mission(bot: Botting):
     bot.Move.XYAndInteractNPC(-2237, -4961)
-    bot.Multibox.SendDialogToTarget(0x88)  # Start Mission
-    # bot.Wait.ForMapLoad(MISSION_IDS[0]) # Having the same Map ID causes wait issues
+    bot.Multibox.SendDialogToTarget(0x88)
+    # Same MapID before/after — use timed wait instead of ForMapLoad
     bot.Wait.ForTime(50000)
-    bot.States.AddHeader("Loop")
-    loop_count = 0
-    while loop_count < 10:
-        bot.Move.FollowAutoPath(Loop_Path)
-        loop_count += 1
+
+def combat_loop(bot: Botting):
+    # Run the portal loop 10 times (registered as 10 FollowAutoPath states)
+    for _ in range(10):
+        bot.Move.FollowAutoPath(LOOP_PATH)
     bot.Wait.UntilOutOfCombat()
-    bot.States.AddHeader("Restart")
-    bot.Map.Travel(OUTPOST_IDS[0])
-    bot.Map.Travel(OUTPOST_IDS[1])
-    bot.States.JumpToStepName("[H]Start Mission_3")
 
+def restart(bot: Botting):
+    bot.Map.Travel(OUTPOST_GATE_OF_TORMENT)
+    bot.Map.Travel(OUTPOST_SHADOW_NEXUS)
 
-def _on_party_wipe(bot: "Botting"):
-    yield from Routines.Yield.wait(5000)
-    fsm = bot.config.FSM
-    fsm.jump_to_state_by_name("[H]Restart_5")
-    fsm.resume()
-    yield
+# ── Bot ───────────────────────────────────────────────────────────────────────
 
-
-def OnPartyWipe(bot: "Botting"):
-    ConsoleLog("Wipe detected", "Party Wiped - Restarting...", message_type=6)
-    fsm = bot.config.FSM
-    fsm.pause()
-    fsm.AddManagedCoroutine("OnWipe_OPD", lambda: _on_party_wipe(bot))
-
-
-bot.SetMainRoutine(bot_routine)
+bot = ModularBot(
+    name="The Shadow Nexus",
+    phases=[
+        Phase("Prepare",        prepare),
+        Phase("Start Mission",  start_mission),
+        Phase("Loop",           combat_loop),
+        Phase("Restart",        restart),
+    ],
+    loop=True,
+    loop_to="Start Mission",               # loop back to mission entry, not travel
+    template="multibox_aggressive",
+    on_party_wipe="Restart",               # wipe → restart (resign & re-enter)
+)
 
 
 def main():
-    bot.Update()
-    bot.UI.draw_window()
+    bot.update()
 
 
 if __name__ == "__main__":
