@@ -1,0 +1,17 @@
+{
+  "id": "SAMPLE_QUEST",
+  "kind": "quest",
+  "name": "Sample Quest",
+  "metadata": {
+    "description": "Minimal quest scenario placeholder."
+  },
+  "actions": [
+    {
+      "action": "Wait.ForTime",
+      "args": [
+        100
+      ]
+    }
+  ]
+}
+

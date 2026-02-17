@@ -1,0 +1,19 @@
+{
+    "_comment": "Hero IDs for each party size. Player is always slot 1.",
+    "_hero_id_reference": {
+        "Norgu": 1, "Goren": 2, "Tahlkora": 3,
+        "Master of Whispers": 4, "Acolyte Jin": 5, "Koss": 6,
+        "Dunkoro": 7, "Acolyte Sousuke": 8, "Melonni": 9,
+        "Zhed Shadowhoof": 10, "General Morgahn": 11, "Margrid the Sly": 12,
+        "Zenmai": 13, "Olias": 14, "Razah": 15,
+        "MOX": 16, "Keiran Thackeray": 17, "Jora": 18,
+        "Pyre Fierceshot": 19, "Anton": 20, "Livia": 21,
+        "Hayda": 22, "Kahmu": 23, "Gwen": 24,
+        "Xandra": 25, "Vekk": 26, "Ogden Stonehealer": 27,
+        "Mercenary 1-8": "28-35", "Miku": 36, "Zei Ri": 37
+    },
+    "party_4": [24, 7, 27],
+    "party_6": [24, 7, 27, 14, 26],
+    "party_8": [24, 7, 27, 14, 26, 5, 19]
+}
+

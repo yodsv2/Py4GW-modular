@@ -1,0 +1,71 @@
+{
+  "id": "SAMPLE_MISSION",
+  "kind": "mission",
+  "name": "Sample Mission",
+  "metadata": {
+    "description": "Mission sample with varied action signatures and kwargs."
+  },
+  "actions": [
+    {
+      "action": "Map.Travel",
+      "kwargs": {
+        "target_map_name": "${mission_outpost}"
+      },
+      "description": "Travel by map name (param placeholder supported)."
+    },
+    {
+      "action": "Move.XY",
+      "args": [
+        -1200,
+        3400,
+        "Move to mission contact",
+        8000
+      ]
+    },
+    {
+      "action": "Dialogs.WithModel",
+      "args": [
+        83,
+        "0x86"
+      ],
+      "kwargs": {
+        "step_name": "Accept mission"
+      },
+      "description": "Dialogs.WithModel(model_id, dialog_id). Hex string is supported (0x86).",
+      "optional": true
+    },
+    {
+      "action": "Dialogs.AtXY",
+      "args": [
+        -1200,
+        3400,
+        "0x86"
+      ],
+      "kwargs": {
+        "step_name": "Accept mission at NPC location"
+      },
+      "description": "Dialogs.AtXY(x, y, dialog_id). dialog_id is required.",
+      "optional": true
+    },
+    {
+      "action": "Wait.ForMapLoad",
+      "kwargs": {
+        "target_map_name": "${mission_instance_map}"
+      }
+    },
+    {
+      "action": "Wait.ForTime",
+      "args": [
+        250
+      ]
+    },
+    {
+      "action": "Party.SetHardMode",
+      "args": [
+        true
+      ],
+      "optional": true
+    }
+  ]
+}
+
