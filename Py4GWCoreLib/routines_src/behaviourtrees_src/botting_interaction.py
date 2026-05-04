@@ -194,6 +194,77 @@ def add_dialog_multibox_state(
     bot.States.AddCustomState(_dialogs_multibox_core, str(name))
 
 
+def add_take_blessing_state(
+    bot,
+    *,
+    coords_resolver: CoordResolver,
+    dialog_ids: Iterable[int] = (0x84, 0x85, 0x86),
+    interval_ms: int = 200,
+    multibox: bool = True,
+    conditional_faction_bribe: bool = False,
+    name: str = "Take Blessing",
+    log: LogFn | None = None,
+) -> None:
+    ids = [int(value) for value in dialog_ids]
+    log_fn = log or _noop_log
+
+    def _should_send_dialog(dialog_id: int) -> bool:
+        if not conditional_faction_bribe or int(dialog_id) != 0x84:
+            return True
+        try:
+            from Py4GWCoreLib import Player
+
+            current_luxon = int(Player.GetLuxonData()[0] or 0)
+            current_kurzick = int(Player.GetKurzickData()[0] or 0)
+            return current_kurzick >= current_luxon
+        except Exception:
+            return True
+
+    def _take_blessing():
+        from Py4GWCoreLib import GLOBAL_CACHE, Player, SharedCommandType
+
+        coords = coords_resolver()
+        if coords is None:
+            log_fn("take_blessing could not resolve blessing NPC coordinates.")
+            return
+        x, y = coords
+        yield from bot.Move._coro_xy(x, y, step_name=name)
+        if cutscene_active():
+            return
+        yield from bot.Interact._coro_with_npc_at_xy(x, y, step_name=name)
+        if cutscene_active():
+            return
+
+        target_id = int(Player.GetTargetID() or 0)
+        sender_email = str(Player.GetAccountEmail() or "")
+        account_emails = []
+        if multibox and target_id > 0:
+            account_emails = [
+                str(getattr(account, "AccountEmail", "") or "")
+                for account in GLOBAL_CACHE.ShMem.GetAllAccountData()
+            ]
+            account_emails = [email for email in account_emails if email and email != sender_email]
+
+        for idx, dialog_id in enumerate(ids):
+            if cutscene_active():
+                return
+            if not _should_send_dialog(dialog_id):
+                log_fn(f"take_blessing skipped conditional bribe dialog {hex(int(dialog_id))}.")
+                continue
+            Player.SendDialog(dialog_id)
+            for account_email in account_emails:
+                GLOBAL_CACHE.ShMem.SendMessage(
+                    sender_email,
+                    account_email,
+                    SharedCommandType.SendDialogToTarget,
+                    (float(target_id), float(dialog_id), 0.0, 0.0),
+                )
+            if idx < len(ids) - 1 and interval_ms > 0:
+                yield from bot.Wait._coro_for_time(int(interval_ms))
+
+    bot.States.AddCustomState(_take_blessing, str(name))
+
+
 def add_interact_gadget_state(bot, *, coords_resolver: CoordResolver, name: str = "Interact Gadget") -> None:
     def _interact_gadget():
         coords = coords_resolver()

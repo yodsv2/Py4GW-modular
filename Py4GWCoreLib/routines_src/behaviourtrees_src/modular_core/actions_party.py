@@ -190,6 +190,11 @@ def handle_resign(ctx: StepContext) -> None:
     wait_after_step(ctx.bot, ctx.step)
 
 
+def handle_donate_faction(ctx: StepContext) -> None:
+    ctx.bot.Multibox.DonateFaction()
+    wait_after_step(ctx.bot, ctx.step)
+
+
 def handle_summon_all_accounts(ctx: StepContext) -> None:
     ctx.bot.Multibox.SummonAllAccounts()
     wait_after_step(ctx.bot, ctx.step)
@@ -442,6 +447,12 @@ modular_step(
     allowed_params=("name",),
     node_class_name="DisablePartyMemberHooksNode",
 )(handle_disable_party_member_hooks)
+modular_step(
+    step_type="donate_faction",
+    category="party",
+    allowed_params=("name",),
+    node_class_name="DonateFactionNode",
+)(handle_donate_faction)
 modular_step(
     step_type="drop_bundle",
     category="party",

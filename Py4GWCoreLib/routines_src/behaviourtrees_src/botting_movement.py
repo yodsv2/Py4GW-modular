@@ -121,6 +121,34 @@ def add_wait_map_change_state(bot, *, target_map_id: int = 0, name: str = "Wait 
     bot.States.AddCustomState(_wait_map_change, str(name))
 
 
+def add_wait_vanquish_complete_state(
+    bot,
+    *,
+    timeout_ms: int = 0,
+    poll_ms: int = 1000,
+    name: str = "Wait Vanquish Complete",
+) -> None:
+    def _wait_vanquish_complete():
+        from Py4GWCoreLib import Map
+
+        started_at = monotonic()
+        timeout = max(0, int(timeout_ms or 0))
+        poll = max(100, int(poll_ms or 1000))
+        while True:
+            if cutscene_active():
+                return
+            try:
+                if Map.IsVanquishCompleted():
+                    return
+            except Exception:
+                return
+            if timeout > 0 and (monotonic() - started_at) * 1000.0 >= timeout:
+                return
+            yield from bot.Wait._coro_for_time(poll)
+
+    bot.States.AddCustomState(_wait_vanquish_complete, str(name))
+
+
 def dispatch_travel(bot, *, target_map_id: int = 0, target_map_name: str = "", leave_party: bool = True) -> None:
     if leave_party:
         bot.Party.LeaveParty()

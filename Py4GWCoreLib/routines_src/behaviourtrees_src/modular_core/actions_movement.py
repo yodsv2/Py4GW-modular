@@ -18,6 +18,7 @@ from Py4GWCoreLib.routines_src.behaviourtrees_src.botting_movement import (
     add_wait_map_change_state,
     add_wait_map_load_state,
     add_wait_out_of_combat_state,
+    add_wait_vanquish_complete_state,
     dispatch_travel,
 )
 from Py4GWCoreLib.routines_src.behaviourtrees_src.botting_multibox import (
@@ -39,6 +40,7 @@ from .step_context import StepContext
 from .step_selectors import resolve_enemy_agent_id_from_step
 from .actions_movement_pathing import (
     add_pre_movement_loot_wait as _add_pre_movement_loot_wait,
+    handle_aggro_path,
     handle_auto_path,
     handle_auto_path_delayed,
     handle_auto_path_till_timeout,
@@ -282,6 +284,16 @@ def handle_wait_map_change(ctx: StepContext) -> None:
     wait_after_step(ctx.bot, ctx.step)
 
 
+def handle_wait_vanquish_complete(ctx: StepContext) -> None:
+    add_wait_vanquish_complete_state(
+        ctx.bot,
+        timeout_ms=max(0, parse_step_int(ctx.step.get("timeout_ms", 0), 0)),
+        poll_ms=max(100, parse_step_int(ctx.step.get("poll_ms", 1000), 1000)),
+        name=str(ctx.step.get("name", "Wait Vanquish Complete")),
+    )
+    wait_after_step(ctx.bot, ctx.step)
+
+
 def handle_enter_challenge(ctx: StepContext) -> None:
     step_name = str(ctx.step.get("name", "Enter Challenge") or "Enter Challenge")
     delay_ms = parse_step_int(ctx.step.get("delay_ms", ctx.step.get("delay", 2000)), 2000)
@@ -291,6 +303,29 @@ def handle_enter_challenge(ctx: StepContext) -> None:
 
 
 # Decorator-driven step registration bindings.
+modular_step(
+    step_type="aggro_path",
+    category="movement",
+    allowed_params=(
+        "aggro_range",
+        "arrival_tolerance",
+        "clear_radius",
+        "detection_radius",
+        "log_stats",
+        "loot_wait_poll_ms",
+        "loot_wait_range",
+        "loot_wait_timeout_ms",
+        "name",
+        "points",
+        "scan_interval_ms",
+        "scan_move_ratio",
+        "stats_interval_ms",
+        "stop_when_vanquished",
+        "tolerance",
+        "wait_for_loot",
+    ),
+    node_class_name="AggroPathNode",
+)(handle_aggro_path)
 modular_step(
     step_type="auto_path",
     category="movement",
@@ -501,6 +536,12 @@ modular_step(
     allowed_params=("target_map_id",),
     node_class_name="WaitMapChangeNode",
 )(handle_wait_map_change)
+modular_step(
+    step_type="wait_vanquish_complete",
+    category="movement",
+    allowed_params=("name", "poll_ms", "timeout_ms"),
+    node_class_name="WaitVanquishCompleteNode",
+)(handle_wait_vanquish_complete)
 modular_step(
     step_type="wait_map_load",
     category="movement",

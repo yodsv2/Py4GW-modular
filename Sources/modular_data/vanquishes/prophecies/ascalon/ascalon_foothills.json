@@ -1,0 +1,283 @@
+{
+  "name": "Ascalon Foothills",
+  "metadata": {
+    "outpost_id": 134,
+    "map_id": 103
+  },
+  "steps": [
+    {
+      "type": "travel",
+      "name": "Travel to Outpost",
+      "target_map_id": 134
+    },
+    {
+      "type": "set_hard_mode",
+      "name": "Set Hard Mode",
+      "enabled": true
+    },
+    {
+      "type": "auto_path",
+      "name": "Outpost Path",
+      "points": [
+        [
+          9342.0,
+          4942.0
+        ]
+      ]
+    },
+    {
+      "type": "exit_map",
+      "name": "Exit Outpost",
+      "point": [
+        9240.0,
+        3985.0
+      ],
+      "target_map_id": 99
+    },
+    {
+      "type": "auto_path",
+      "name": "Transit 1",
+      "points": [
+        [
+          8304.0,
+          -458.0
+        ],
+        [
+          10540.0,
+          -4383.0
+        ],
+        [
+          10274.0,
+          -11684.0
+        ],
+        [
+          9741.0,
+          -16900.0
+        ],
+        [
+          10668.0,
+          -17113.0
+        ],
+        [
+          11056.0,
+          -17139.0
+        ]
+      ]
+    },
+    {
+      "type": "wait_map_load",
+      "name": "Transit 1 Map Load",
+      "target_map_id": 103
+    },
+    {
+      "type": "aggro_path",
+      "name": "Vanquish Path",
+      "points": [
+        [
+          -5785.0,
+          1558.0
+        ],
+        [
+          -2684.0,
+          2006.0
+        ],
+        [
+          -5544.0,
+          -1613.0
+        ],
+        [
+          -3428.0,
+          -5729.0
+        ],
+        [
+          373.0,
+          -3274.0
+        ],
+        [
+          -3156.0,
+          -2098.0
+        ],
+        [
+          -1639.0,
+          751.0
+        ],
+        [
+          621.0,
+          -735.0
+        ],
+        [
+          2040.0,
+          2078.0
+        ],
+        [
+          240.0,
+          5077.0
+        ],
+        [
+          4885.0,
+          5096.0
+        ],
+        [
+          5939.0,
+          1126.0
+        ],
+        [
+          3321.0,
+          -3531.0
+        ],
+        [
+          7307.0,
+          -5105.0
+        ]
+      ],
+      "detection_radius": 2500,
+      "clear_radius": 2500,
+      "stop_when_vanquished": true,
+      "anchor": true
+    },
+    {
+      "type": "wait_out_of_combat",
+      "name": "Wait Out Of Combat"
+    },
+    {
+      "type": "aggro_path",
+      "name": "Reverse Cleanup 1",
+      "points": [
+        [
+          7307.0,
+          -5105.0
+        ],
+        [
+          3321.0,
+          -3531.0
+        ],
+        [
+          5939.0,
+          1126.0
+        ],
+        [
+          4885.0,
+          5096.0
+        ],
+        [
+          240.0,
+          5077.0
+        ],
+        [
+          2040.0,
+          2078.0
+        ],
+        [
+          621.0,
+          -735.0
+        ],
+        [
+          -1639.0,
+          751.0
+        ],
+        [
+          -3156.0,
+          -2098.0
+        ],
+        [
+          373.0,
+          -3274.0
+        ],
+        [
+          -3428.0,
+          -5729.0
+        ],
+        [
+          -5544.0,
+          -1613.0
+        ],
+        [
+          -2684.0,
+          2006.0
+        ],
+        [
+          -5785.0,
+          1558.0
+        ]
+      ],
+      "detection_radius": 3500,
+      "clear_radius": 3500,
+      "stop_when_vanquished": true,
+      "anchor": true
+    },
+    {
+      "type": "wait_out_of_combat",
+      "name": "Wait Out Of Combat"
+    },
+    {
+      "type": "aggro_path",
+      "name": "Reverse Cleanup 2",
+      "points": [
+        [
+          7307.0,
+          -5105.0
+        ],
+        [
+          3321.0,
+          -3531.0
+        ],
+        [
+          5939.0,
+          1126.0
+        ],
+        [
+          4885.0,
+          5096.0
+        ],
+        [
+          240.0,
+          5077.0
+        ],
+        [
+          2040.0,
+          2078.0
+        ],
+        [
+          621.0,
+          -735.0
+        ],
+        [
+          -1639.0,
+          751.0
+        ],
+        [
+          -3156.0,
+          -2098.0
+        ],
+        [
+          373.0,
+          -3274.0
+        ],
+        [
+          -3428.0,
+          -5729.0
+        ],
+        [
+          -5544.0,
+          -1613.0
+        ],
+        [
+          -2684.0,
+          2006.0
+        ],
+        [
+          -5785.0,
+          1558.0
+        ]
+      ],
+      "detection_radius": 5000,
+      "clear_radius": 5000,
+      "stop_when_vanquished": true,
+      "anchor": true
+    },
+    {
+      "type": "wait_out_of_combat",
+      "name": "Wait Out Of Combat"
+    }
+  ]
+}

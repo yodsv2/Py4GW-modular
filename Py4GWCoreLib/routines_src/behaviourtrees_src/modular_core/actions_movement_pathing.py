@@ -6,6 +6,7 @@ This module provides pathing-oriented modular movement step handlers.
 from __future__ import annotations
 
 from Py4GWCoreLib.routines_src.behaviourtrees_src.botting_pathing import (
+    add_aggro_path_state,
     add_auto_path_delayed_state,
     add_auto_path_state,
     add_auto_path_till_timeout_state,
@@ -125,6 +126,47 @@ def handle_auto_path(ctx: StepContext) -> None:
         log=lambda message: log_recipe(ctx, message),
     )
 
+    wait_after_step(ctx.bot, ctx.step)
+
+
+def handle_aggro_path(ctx: StepContext) -> None:
+    from Py4GWCoreLib import Range
+
+    points = [tuple(p) for p in ctx.step["points"]]
+    if not points:
+        wait_after_step(ctx.bot, ctx.step)
+        return
+
+    name = str(ctx.step.get("name", f"Aggro Path {ctx.step_idx + 1}") or f"Aggro Path {ctx.step_idx + 1}")
+    detection_radius = parse_step_float(ctx.step.get("detection_radius", ctx.step.get("aggro_range", 2500.0)), 2500.0)
+    clear_radius = parse_step_float(ctx.step.get("clear_radius", detection_radius), detection_radius)
+    default_tolerance = float(ctx.bot.config.config_properties.movement_tolerance.get("value") or 150.0)
+    arrival_tolerance = max(25.0, parse_step_float(ctx.step.get("arrival_tolerance", ctx.step.get("tolerance", default_tolerance)), default_tolerance))
+    scan_interval_ms = max(50, parse_step_int(ctx.step.get("scan_interval_ms", 500), 500))
+    scan_move_ratio = max(0.05, parse_step_float(ctx.step.get("scan_move_ratio", 0.75), 0.75))
+    stop_when_vanquished = parse_step_bool(ctx.step.get("stop_when_vanquished", False), False)
+    log_stats = parse_step_bool(ctx.step.get("log_stats", False), False)
+    stats_interval_ms = max(1000, parse_step_int(ctx.step.get("stats_interval_ms", 30_000), 30_000))
+    if detection_radius <= 0:
+        detection_radius = Range.Compass.value
+    if clear_radius <= 0:
+        clear_radius = detection_radius
+
+    _add_pre_movement_loot_wait(ctx, name)
+    add_aggro_path_state(
+        ctx.bot,
+        points=points,
+        name=name,
+        detection_radius=detection_radius,
+        clear_radius=clear_radius,
+        arrival_tolerance=arrival_tolerance,
+        scan_interval_ms=scan_interval_ms,
+        scan_move_ratio=scan_move_ratio,
+        stop_when_vanquished=stop_when_vanquished,
+        log_stats=log_stats,
+        stats_interval_ms=stats_interval_ms,
+        log=lambda message: log_recipe(ctx, message),
+    )
     wait_after_step(ctx.bot, ctx.step)
 
 

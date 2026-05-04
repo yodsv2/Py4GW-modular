@@ -21,6 +21,7 @@ from Py4GWCoreLib.routines_src.behaviourtrees_src.botting_interaction import (
     add_key_press_state,
     add_loot_chest_state,
     add_skip_cutscene_state,
+    add_take_blessing_state,
     add_use_item_state,
 )
 
@@ -33,7 +34,7 @@ from .actions_party_toggles import (
 from .step_registration import modular_step
 from .step_context import StepContext
 from .step_selectors import resolve_agent_xy_from_step, resolve_item_model_id_from_step
-from .step_utils import wait_after_step
+from .step_utils import parse_step_bool, wait_after_step
 
 
 def _wrap_dialog_with_auto_state_guard(ctx: StepContext, action_factory: Callable):
@@ -175,6 +176,49 @@ def handle_dialog_multibox(ctx: StepContext) -> None:
         send_wait_step_ms=send_wait_step_ms,
         send_timeout_ms=send_timeout_ms,
         name=str(name),
+        log=lambda message: ConsoleLog(f"Recipe:{ctx.recipe_name}", f"{message} step index {ctx.step_idx}"),
+    )
+    wait_after_step(ctx.bot, ctx.step)
+
+
+def handle_take_blessing(ctx: StepContext) -> None:
+    from Py4GWCoreLib import ConsoleLog, Range
+
+    name = str(ctx.step.get("name", f"Take Blessing {ctx.step_idx + 1}") or f"Take Blessing {ctx.step_idx + 1}")
+    interval_ms = int(ctx.step.get("interval_ms", 200))
+    multibox = parse_step_bool(ctx.step.get("multibox", True), True)
+    conditional_faction_bribe = parse_step_bool(ctx.step.get("conditional_faction_bribe", False), False)
+    raw_ids = ctx.step.get("id", ctx.step.get("dialog_ids", [0x84, 0x85, 0x86]))
+    dialog_ids_raw = raw_ids if isinstance(raw_ids, (list, tuple)) else [raw_ids]
+    dialog_ids: list[int] = []
+    for value in dialog_ids_raw:
+        try:
+            dialog_ids.append(int(str(value), 0))
+        except (TypeError, ValueError):
+            ConsoleLog(f"Recipe:{ctx.recipe_name}", f"Invalid take_blessing dialog id at index {ctx.step_idx}: {value!r}")
+            return
+
+    blessing_step = dict(ctx.step)
+    if "max_dist" not in blessing_step:
+        blessing_step["max_dist"] = Range.Compass.value
+
+    def _coords():
+        return resolve_agent_xy_from_step(
+            blessing_step,
+            recipe_name=ctx.recipe_name,
+            step_idx=ctx.step_idx,
+            agent_kind="npc",
+            default_max_dist=Range.Compass.value,
+        )
+
+    add_take_blessing_state(
+        ctx.bot,
+        coords_resolver=_coords,
+        dialog_ids=dialog_ids,
+        interval_ms=interval_ms,
+        multibox=multibox,
+        conditional_faction_bribe=conditional_faction_bribe,
+        name=name,
         log=lambda message: ConsoleLog(f"Recipe:{ctx.recipe_name}", f"{message} step index {ctx.step_idx}"),
     )
     wait_after_step(ctx.bot, ctx.step)
@@ -461,6 +505,12 @@ modular_step(
     allowed_params=("delay_ms", "poll_ms", "pre_skip_delay_ms", "timeout_ms", "wait_ms"),
     node_class_name="SkipCutsceneNode",
 )(handle_skip_cutscene)
+modular_step(
+    step_type="take_blessing",
+    category="interaction",
+    allowed_params=("conditional_faction_bribe", "dialog_ids", "id", "interval_ms", "max_dist", "multibox", "name"),
+    node_class_name="TakeBlessingNode",
+)(handle_take_blessing)
 modular_step(
     step_type="use_item",
     category="interaction",
