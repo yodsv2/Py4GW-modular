@@ -158,6 +158,17 @@ def exchange_pumpkins_for_pie(quantity: int):
         UIManager.ClickDialogButton(int(1))
         yield from Routines.Yield.wait(100)
 
+
+def exchange_honeycombs_for_cake(quantity: int):
+    for _ in range(quantity):
+        target = Player.GetTargetID()
+        Player.Interact(target, False)
+        yield from Routines.Yield.wait(50)
+        Player.SendDialog(0x8D)
+        yield from Routines.Yield.wait(50)
+        Player.SendDialog(0x99)
+        yield from Routines.Yield.wait(50)
+
 # (display name, model_id, points_per_use)
 _SWEETS: List[Tuple[str, int, int]] = [
     ("Creme Brulee",          ModelID.Creme_Brulee.value,          3),
@@ -561,6 +572,20 @@ def _draw_exchanges_tab() -> None:
         PyImGui.same_line(0.0, 8.0)
         if PyImGui.button("exchange for pie"):
             GLOBAL_CACHE.Coroutines.append(exchange_pumpkins_for_pie(quantity_to_consume))
+
+    # Honeycomb -> Delicious Cake
+    honeycomb_count = _count_item(ModelID.Honeycomb.value)
+    if honeycomb_count > 0:
+        any_shown = True
+        cake_count = honeycomb_count // 50
+        PyImGui.text(f"Honeycomb: {honeycomb_count}")
+        PyImGui.text(f"Yield : {cake_count}")
+        if cake_count > 0:
+            if PyImGui.button("exchange for cake"):
+                GLOBAL_CACHE.Coroutines.append(exchange_honeycombs_for_cake(min(quantity_to_consume, cake_count)))
+        else:
+            PyImGui.text("(need at least 50)")
+        PyImGui.spacing()
 
     if not any_shown:
         PyImGui.text("No exchangeable items in inventory.")
