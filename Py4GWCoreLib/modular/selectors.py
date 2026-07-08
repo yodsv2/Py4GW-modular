@@ -1,4 +1,5 @@
 """Selector helpers kept for BT-oriented modular recipes and MerchantRules."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -7,7 +8,6 @@ import PyAgent
 from Py4GWCoreLib import Range
 
 from .domain.target_registry import get_named_agent_target
-
 
 COMPASS_RANGE = float(Range.Compass.value)
 
@@ -44,8 +44,6 @@ def resolve_agent_xy_from_step(
     if model_id is None and named_target is not None and named_target.model_id is not None:
         model_id = int(named_target.model_id)
     encoded_names = named_target.encoded_names if named_target is not None else ()
-    if not target_name and named_target is not None and not encoded_names and model_id is None:
-        target_name = str(named_target.display_name or "").strip()
     exact_name = _parse_bool(step.get("exact_name", False), False)
     nearest = _parse_bool(step.get("nearest", False), False)
 

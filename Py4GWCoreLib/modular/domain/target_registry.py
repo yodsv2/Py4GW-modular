@@ -1,4 +1,5 @@
 """Named target registry for BT-native modular recipes."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,7 +10,7 @@ from typing import Any
 class TargetRegistryKind(str, Enum):
     """
     T ar ge tR eg is tr yK in d class.
-    
+
     Meta:
       Expose: true
       Audience: advanced
@@ -18,6 +19,7 @@ class TargetRegistryKind(str, Enum):
       UserDescription: Internal class used by modular orchestration and step execution.
       Notes: Keep behavior explicit and side effects contained.
     """
+
     NPC = "npc"
     ENEMY = "enemy"
     GADGET = "gadget"
@@ -27,7 +29,7 @@ class TargetRegistryKind(str, Enum):
 class AgentTargetDefinition:
     """
     A ge nt Ta rg et De fi ni ti on class.
-    
+
     Meta:
       Expose: true
       Audience: advanced
@@ -36,6 +38,7 @@ class AgentTargetDefinition:
       UserDescription: Internal class used by modular orchestration and step execution.
       Notes: Keep behavior explicit and side effects contained.
     """
+
     display_name: str = ""
     encoded_names: tuple[tuple[int, ...], ...] = ()
     model_id: int | None = None
@@ -186,7 +189,10 @@ NPC_TARGETS: dict[str, AgentTargetValue] = {
     "KEHANNI": (((1, 129, 3, 14, 68, 210, 88, 190, 229, 34, 0, 0),), "Kehanni"),
     "KUWAME": (((1, 129, 148, 16, 185, 240, 112, 164, 106, 60, 0, 0),), "Kuwame"),
     "PRIESTESS_HAILA": (((1, 129, 122, 19, 88, 233, 41, 194, 182, 25, 0, 0),), "Priestess Haila"),
-    "SEEKER_OF_WHISPERS_LIGHTBRINGER_RANKS": (((142, 2, 64, 245, 92, 144, 245, 8, 0, 0),), "Seeker of Whispers [Lightbringer Ranks]"),
+    "SEEKER_OF_WHISPERS_LIGHTBRINGER_RANKS": (
+        ((142, 2, 64, 245, 92, 144, 245, 8, 0, 0),),
+        "Seeker of Whispers [Lightbringer Ranks]",
+    ),
     "EVENT_PLANNER_KAZSHA": (((1, 129, 20, 61, 126, 215, 114, 147, 141, 108, 0, 0),), "Event Planner Kazsha"),
     "MESSENGER_OF_LYSSA": (((1, 129, 149, 29, 239, 129, 78, 216, 25, 29, 0, 0),), "Messenger of Lyssa"),
     "EMISSARY_DAJMIR": (((1, 129, 107, 56, 59, 172, 149, 235, 254, 72, 0, 0),), "Emissary Dajmir"),
@@ -238,9 +244,15 @@ NPC_TARGETS: dict[str, AgentTargetValue] = {
         ),
         "Prince Ahmtur the Mighty",
     ),
-    "PRINCE_BOKKA_THE_MAGNIFICENT": (((1, 129, 236, 16, 19, 166, 225, 142, 206, 56, 0, 0),), "Prince Bokka the Magnificent"),
+    "PRINCE_BOKKA_THE_MAGNIFICENT": (
+        ((1, 129, 236, 16, 19, 166, 225, 142, 206, 56, 0, 0),),
+        "Prince Bokka the Magnificent",
+    ),
     "PRINCE_MEHTU_THE_WISE": (((1, 129, 231, 16, 83, 211, 75, 243, 157, 38, 0, 0),), "Prince Mehtu the Wise"),
-    "ROYAL_FINANCE_MINISTER_OLUDA": (((1, 129, 166, 16, 152, 146, 112, 244, 113, 52, 0, 0),), "Royal Finance Minister Oluda"),
+    "ROYAL_FINANCE_MINISTER_OLUDA": (
+        ((1, 129, 166, 16, 152, 146, 112, 244, 113, 52, 0, 0),),
+        "Royal Finance Minister Oluda",
+    ),
     "ROYAL_FOOD_TASTER_RENDU": (((1, 129, 178, 16, 72, 142, 44, 213, 105, 91, 0, 0),), "Royal Food Taster Rendu"),
     "VAUGHN_THE_VENERABLE": (((1, 129, 31, 27, 68, 149, 6, 234, 108, 123, 0, 0),), "Vaughn the Venerable"),
     "HEAD_PRIEST_VAHMANI": (((1, 129, 192, 64, 45, 223, 213, 242, 67, 122, 0, 0),), "Head Priest Vahmani"),
@@ -269,7 +281,7 @@ NPC_TARGETS: dict[str, AgentTargetValue] = {
     "GUARDSMAN_CHOW": AgentTargetDefinition(display_name="Guardsman Chow"),
     "GUARDSMAN_CHOW_OUTPOST": AgentTargetDefinition(display_name="Guardsman Chow"),
     "KAHDASH": AgentTargetDefinition(display_name="Kahdash"),
-    "TABOR_WOOLRIDGE":  (((143, 59, 195, 195, 158, 255, 240, 115, 0, 0),), "Tabor Woolridge"),
+    "TABOR_WOOLRIDGE": (((143, 59, 195, 195, 158, 255, 240, 115, 0, 0),), "Tabor Woolridge"),
     "MICHIKO_SKILLS": (((2, 110, 190, 167, 165, 179, 120, 49, 0, 0),), "Michiko [Skills]"),
     "NPC": (((2, 129, 155, 34, 73, 236, 154, 195, 76, 124, 0, 0),), ""),
     "OGDEN_STONEHEALER": (((2, 129, 86, 6, 0, 0),), "Ogden Stonehealer"),
@@ -372,7 +384,10 @@ GADGET_TARGETS: dict[str, AgentTargetValue] = {
     "ZEALOT_S_CHEST": (((2, 129, 217, 61, 0, 0),), "Zealot's Chest"),
     "TOME_PEDESTAL": (((47, 33, 132, 139, 29, 194, 165, 113, 0, 0),), "Tome Pedestal"),
     "CELL_LOCK": (((1, 129, 84, 25, 121, 157, 164, 216, 47, 4, 0, 0),), "Cell Lock"),
-    "MONUMENT_TO_THE_DEFEAT_OF_PALAWA_JOKO": (((1, 129, 215, 34, 159, 146, 43, 245, 183, 58, 0, 0),), "Monument to the Defeat of Palawa Joko"),
+    "MONUMENT_TO_THE_DEFEAT_OF_PALAWA_JOKO": (
+        ((1, 129, 215, 34, 159, 146, 43, 245, 183, 58, 0, 0),),
+        "Monument to the Defeat of Palawa Joko",
+    ),
     "WURM_SPOOR": (((1, 129, 13, 38, 234, 223, 171, 254, 11, 49, 0, 0),), "Wurm Spoor"),
     "BOSS_LOCK": (((2, 129, 129, 25, 72, 206, 22, 143, 238, 93, 0, 0),), "Boss Lock"),
     "DUNGEON_LOCK": (((2, 129, 128, 25, 89, 218, 32, 206, 95, 122, 0, 0),), "Dungeon Lock"),
@@ -384,6 +399,7 @@ GADGET_TARGETS: dict[str, AgentTargetValue] = {
     "MYSTICAL_KEYHOLDER": AgentTargetDefinition(display_name="Mystical Keyholder"),
     "UNSTABLE_MAGICAL_ENERGY_STORAGE": AgentTargetDefinition(display_name="Unstable Magical Energy Storage"),
 }
+
 
 def _normalize_agent_target(value: AgentTargetValue | None) -> AgentTargetDefinition | None:
     if value is None:
@@ -432,8 +448,6 @@ def get_named_agent_target(kind: str, key: Any) -> AgentTargetDefinition | None:
         if definition is None:
             continue
         if normalize_target_key(registry_key) == normalized_key:
-            return definition
-        if normalize_target_key(definition.display_name) == normalized_key:
             return definition
         for encoded_name in definition.encoded_names:
             if normalize_target_key(encoded_name) == normalized_key:

@@ -1,0 +1,248 @@
+"""Missions Nightfall Istan BehaviorTree recipes."""
+
+from __future__ import annotations
+
+from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
+from Sources.ApoSource.ApoBottingLib import wrappers as BT
+
+
+def blacktide_den() -> BehaviorTree:
+    return BT.Sequence(
+        name='Blacktide Den',
+        children=[
+            BT.Travel(target_map_id=492, leave_party=True),
+            BT.LoadParty(max_heroes=8, required_hero=['Tahlkora']),
+            BT.MoveAndKill(pos=(2095, 769), pause_on_combat=True),
+            BT.Dialog(kind='npc', key='SAVAGE_NUNBE', dialog_ids=['0x81', '0x84']),
+            BT.Wait(duration_ms=10000),
+            BT.WaitForMapLoad(map_id=492, timeout_ms=10000),
+            BT.MoveAndKill(pos=(-2506, 13286), pause_on_combat=True),
+            BT.OptionalInteractItemByModel(model_id=17054, point=None, max_dist=4500),
+            BT.WaitForMapLoad(map_id=492, timeout_ms=10000),
+            BT.MoveAndKill(pos=(-2567, 12200), pause_on_combat=True),
+            BT.MoveAndKill(pos=(4574, 5564), pause_on_combat=True),
+            BT.Interact(kind='npc', key='CAPTAIN_BESUZ'),
+            BT.MoveAndKill(
+                pos=[(4513, 5306), (4720, 4937), (8006, 2624), (9371, 6765), (10586, 7762)],
+                pause_on_combat=True,
+            ),
+            BT.MoveAndKill(pos=(12852, 9946), pause_on_combat=True),
+            BT.MoveAndKill(
+                pos=[(15005, 11670), (4631, 5145), (8128, 2900), (8428, -4532)],
+                pause_on_combat=True,
+            ),
+            BT.MoveToTarget(kind='enemy', key='RINKHAL_MONITOR', max_dist=8000),
+            BT.MoveAndKill(
+                pos=[(7148, -10282), (1276, -12037), (-2732, -4738), (-5910, 763)],
+                pause_on_combat=True,
+            ),
+            BT.MoveAndKill(pos=[(-10475, 3482), (-14392, 5888)], pause_on_combat=True),
+            BT.MoveAndKill(pos=(-15155, 9201), pause_on_combat=True),
+            BT.MoveAndKill(
+                pos=[
+                    (-13662, 4155),
+                    (-6743, 463),
+                    (-2655, -4752),
+                    (1334, -12936),
+                    (-3064, -16205),
+                    (-5779, -12178),
+                    (-4451, -13742),
+                ],
+                pause_on_combat=True,
+            ),
+            BT.Wait(duration_ms=5000),
+            BT.MoveAndKill(pos=[(-5559, -12310), (-8723, -12092)], pause_on_combat=True),
+            BT.Wait(duration_ms=50000),
+            BT.WaitForMapLoad(map_id=431, timeout_ms=10000),
+        ],
+    )
+
+
+def consulate_docks() -> BehaviorTree:
+    return BT.Sequence(
+        name='Consulate Docks',
+        children=[
+            BT.Travel(target_map_id=493, leave_party=True),
+            BT.LoadParty(max_heroes=8, required_hero=['Dunkoro']),
+            BT.MoveAndKill(pos=(-1664, 16760), pause_on_combat=True),
+            BT.Dialog(kind='npc', key='RAIDMARSHAL_MEHDARA', dialog_ids=['0x81', '0x84']),
+            BT.Wait(duration_ms=8000),
+            BT.WaitForMapLoad(map_id=493, timeout_ms=10000),
+            BT.MoveAndKill(pos=(-15366, -6597), pause_on_combat=True),
+            BT.MoveAndKill(
+                pos=[(-12826, -4983), (-9033, -3993), (-7996, -2981), (-9111, -2954), (-9039, -4130), (-8078, -4147)],
+                pause_on_combat=True,
+            ),
+            BT.Interact(kind='npc', key='NERASHI'),
+            BT.MoveAndKill(
+                pos=[(-8194, -3511), (-3867, -4301), (-1001, -5759), (-480, -7011), (1090, -7631), (236, -9489)],
+                pause_on_combat=True,
+            ),
+            BT.Wait(duration_ms=5000),
+            BT.WaitForMapLoad(map_id=493, timeout_ms=10000),
+            BT.MoveAndKill(pos=(1509, -11013), pause_on_combat=True),
+            BT.MoveAndKill(
+                pos=[(1321, -8309), (3440, -6005), (5094, -3933)], pause_on_combat=True
+            ),
+            BT.MoveAndKill(pos=[(2778, -4544), (2552, -4062)], pause_on_combat=True),
+            BT.WaitForMapLoad(map_id=381, timeout_ms=10000),
+        ],
+    )
+
+
+def jokanur_diggings() -> BehaviorTree:
+    return BT.Sequence(
+        name='Jokanur Diggings',
+        children=[
+            BT.Travel(target_map_id=491, leave_party=True),
+            BT.LoadParty(max_heroes=4),
+            BT.MoveAndKill(pos=(2904, 1989), pause_on_combat=True),
+            BT.Dialog(kind='npc', key='DIGMASTER_GATAH', dialog_ids=['0x81', '0x84']),
+            BT.MoveAndKill(pos=(17455, 11670), pause_on_combat=True),
+            BT.Wait(duration_ms=2000),
+            BT.MoveAndKill(pos=(77, 14437), pause_on_combat=True),
+            BT.Wait(duration_ms=700),
+            BT.Wait(duration_ms=21800),
+            BT.MoveAndKill(pos=(-1700, 14449), pause_on_combat=True),
+            BT.Wait(duration_ms=600),
+            BT.Wait(duration_ms=3200),
+            BT.MoveAndKill(pos=[(-4987, 14080), (-4877, 10892)], pause_on_combat=True),
+            BT.OptionalInteractItemByModel(model_id=17055, point=None, max_dist=4500),
+            BT.MoveAndKill(pos=(-5725, 11275), pause_on_combat=True),
+            BT.Interact(kind='gadget', key='STONE_PEDESTAL', pos=(-5934, 11249)),
+            BT.MoveAndKill(pos=(-6813, 11477), pause_on_combat=True),
+            BT.Wait(duration_ms=2200),
+            BT.MoveAndKill(
+                pos=[(-9490, 11437), (-12730, 9041), (-12256, 12856)], pause_on_combat=True
+            ),
+            BT.Wait(duration_ms=29400),
+            BT.MoveAndKill(pos=(-12520, 13865), pause_on_combat=True),
+            BT.OptionalInteractItemByModel(model_id=17055, point=None, max_dist=4500),
+            BT.MoveAndKill(pos=(-11906, 6803), pause_on_combat=True),
+            BT.Wait(duration_ms=100),
+            BT.MoveAndKill(pos=(-9521, 11466), pause_on_combat=True),
+            BT.OptionalInteractItemByModel(model_id=17055, point=None, max_dist=4500),
+            BT.MoveAndKill(pos=(-11599, 6555), pause_on_combat=True),
+            BT.Wait(duration_ms=100),
+            BT.MoveAndKill(pos=(-11911, 6816), pause_on_combat=True),
+            BT.OptionalInteractItemByModel(model_id=17055, point=None, max_dist=4500),
+            BT.Interact(kind='gadget', key='STONE_PEDESTAL', pos=(-11928, 6532)),
+            BT.OptionalInteractItemByModel(model_id=17055, point=None, max_dist=4500),
+            BT.Interact(kind='gadget', key='STONE_PEDESTAL', pos=(-11483, 6534)),
+            BT.MoveAndKill(pos=(-10189, 2082), pause_on_combat=True),
+            BT.Interact(kind='npc', key='KAHDASH'),
+            BT.MoveAndKill(pos=(-11521, -46), pause_on_combat=True),
+            BT.MoveAndKill(pos=(-9966, -1530), pause_on_combat=True),
+            BT.Wait(duration_ms=130000),
+            BT.MoveAndKill(pos=(-5681, -1567), pause_on_combat=True),
+            BT.WaitForMapLoad(map_id=449, timeout_ms=10000),
+        ],
+    )
+
+
+ROUTE_POINTS_BY_RECIPE: dict[str, tuple[tuple[float, float], ...]] = {
+    'blacktide_den': (
+        (2095.0, 769.0),
+        (-2506.0, 13286.0),
+        (-2567.0, 12200.0),
+        (4574.0, 5564.0),
+        (4513.0, 5306.0),
+        (4720.0, 4937.0),
+        (8006.0, 2624.0),
+        (9371.0, 6765.0),
+        (10586.0, 7762.0),
+        (12852.0, 9946.0),
+        (15005.0, 11670.0),
+        (4631.0, 5145.0),
+        (8128.0, 2900.0),
+        (8428.0, -4532.0),
+        (7148.0, -10282.0),
+        (1276.0, -12037.0),
+        (-2732.0, -4738.0),
+        (-5910.0, 763.0),
+        (-10475.0, 3482.0),
+        (-14392.0, 5888.0),
+        (-15155.0, 9201.0),
+        (-13662.0, 4155.0),
+        (-6743.0, 463.0),
+        (-2655.0, -4752.0),
+        (1334.0, -12936.0),
+        (-3064.0, -16205.0),
+        (-5779.0, -12178.0),
+        (-4451.0, -13742.0),
+        (-5559.0, -12310.0),
+        (-8723.0, -12092.0),
+    ),
+    'consulate_docks': (
+        (-1664.0, 16760.0),
+        (-15366.0, -6597.0),
+        (-12826.0, -4983.0),
+        (-9033.0, -3993.0),
+        (-7996.0, -2981.0),
+        (-9111.0, -2954.0),
+        (-9039.0, -4130.0),
+        (-8078.0, -4147.0),
+        (-8194.0, -3511.0),
+        (-3867.0, -4301.0),
+        (-1001.0, -5759.0),
+        (-480.0, -7011.0),
+        (1090.0, -7631.0),
+        (236.0, -9489.0),
+        (1509.0, -11013.0),
+        (1321.0, -8309.0),
+        (3440.0, -6005.0),
+        (5094.0, -3933.0),
+        (2778.0, -4544.0),
+        (2552.0, -4062.0),
+    ),
+    'jokanur_diggings': (
+        (2904.0, 1989.0),
+        (17455.0, 11670.0),
+        (77.0, 14437.0),
+        (-1700.0, 14449.0),
+        (-4987.0, 14080.0),
+        (-4877.0, 10892.0),
+        (-5725.0, 11275.0),
+        (-6813.0, 11477.0),
+        (-9490.0, 11437.0),
+        (-12730.0, 9041.0),
+        (-12256.0, 12856.0),
+        (-12520.0, 13865.0),
+        (-11906.0, 6803.0),
+        (-9521.0, 11466.0),
+        (-11599.0, 6555.0),
+        (-11911.0, 6816.0),
+        (-10189.0, 2082.0),
+        (-11521.0, -46.0),
+        (-9966.0, -1530.0),
+        (-5681.0, -1567.0),
+    ),
+}
+
+
+RECIPES: tuple[dict[str, object], ...] = (
+    {
+        'kind': 'mission',
+        'key': 'nightfall/blacktide_den',
+        'title': 'Blacktide Den',
+        'factory': 'blacktide_den',
+        'source_steps': 23,
+        'raw_steps': 23,
+    },
+    {
+        'kind': 'mission',
+        'key': 'nightfall/consulate_docks',
+        'title': 'Consulate Docks',
+        'factory': 'consulate_docks',
+        'source_steps': 16,
+        'raw_steps': 16,
+    },
+    {
+        'kind': 'mission',
+        'key': 'nightfall/jokanur_diggings',
+        'title': 'Jokanur Diggings',
+        'factory': 'jokanur_diggings',
+        'source_steps': 40,
+        'raw_steps': 40,
+    },
+)

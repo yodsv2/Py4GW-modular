@@ -1,7 +1,8 @@
-"""Run a single modular JSON recipe through the BT-native compiler."""
+"""Run a single Python modular recipe through BottingTree."""
+
 from __future__ import annotations
 
-import json
+import ast
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -11,11 +12,13 @@ import PyImGui
 from Py4GWCoreLib import Console
 from Py4GWCoreLib import ConsoleLog
 from Py4GWCoreLib.botting_tree_src.ui import BottingTreeUIMovePathMixin
-from Py4GWCoreLib.modular import BTRecipeRunner
-from Py4GWCoreLib.modular import RecipeSpec
-from Py4GWCoreLib.modular.paths import modular_data_root
-from Py4GWCoreLib.modular.widget_runtime import guarded_widget_main
-
+from Py4GWCoreLib.BottingTree import BottingTree
+from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
+from Sources.modular_recipes.catalog import RecipeSpec
+from Sources.modular_recipes.catalog import all_specs
+from Sources.modular_recipes.catalog import get_recipe_factory
+from Sources.modular_recipes.catalog import get_recipe_module
+from Widgets.Automation.modular.widget_guard import guarded_widget_main
 
 MODULE_NAME = "Modular Tester"
 MODULE_ICON = "Textures/Module_Icons/Route Planner.png"
@@ -41,24 +44,36 @@ class RecipeSummary:
     title: str
     kind: str
     steps: int
-    anchors: int
-    first_step: str
+    module: str
+    factory: str
+
+
+@dataclass(frozen=True)
+class SourceStep:
+    index: int
+    file: str
+    line: int
+    end_line: int
+    call: str
+    source: str
+    points: tuple[tuple[float, float], ...] = ()
 
 
 _recipe_files: list[str] = []
 _recipe_tree: dict[str, object] = {"dirs": {}, "files": []}
 _recipe_titles: dict[str, str] = {}
 _recipe_summaries: dict[str, RecipeSummary] = {}
+_recipe_specs: dict[str, RecipeSpec] = {}
 _selected_recipe = ""
 _browser_path: list[str] = []
 _filter_text = ""
-_runner: BTRecipeRunner | None = None
+_runner: BottingTree | None = None
+_planner_step_total = 0
+_last_active_step_name = ""
 _status = ""
 _last_recipe = ""
 _loop = False
 _debug_logging = False
-_preview_step_index = 0
-_start_step_index = 0
 _draw_move_path = True
 _draw_move_path_labels = False
 _draw_move_path_thickness = 4.0
@@ -81,6 +96,7 @@ class _TesterMovePathDrawer(BottingTreeUIMovePathMixin):
 
 
 _path_drawer = _TesterMovePathDrawer()
+_source_steps_by_recipe: dict[str, tuple[SourceStep, ...]] = {}
 
 
 def _debug(message: str) -> None:
@@ -89,27 +105,26 @@ def _debug(message: str) -> None:
 
 
 def _refresh_recipe_files() -> None:
-    global _recipe_files, _recipe_tree, _recipe_titles, _recipe_summaries, _selected_recipe, _preview_step_index, _start_step_index
-    root = Path(modular_data_root())
+    global _recipe_files, _recipe_tree, _recipe_titles, _recipe_summaries, _recipe_specs
+    global _selected_recipe
     recipes: list[str] = []
     titles: dict[str, str] = {}
     summaries: dict[str, RecipeSummary] = {}
-    for path in root.rglob("*.json"):
-        rel = path.relative_to(root).as_posix()
-        if rel.startswith("tools/") or rel.startswith("prebuilt/"):
-            continue
+    specs: dict[str, RecipeSpec] = {}
+    for spec in all_specs():
+        rel = _spec_display_path(spec)
         recipes.append(rel)
-        summary = _recipe_summary(rel)
+        specs[rel] = spec
+        summary = _summary_from_spec(spec, rel)
         titles[rel] = summary.title
         summaries[rel] = summary
     _recipe_files = sorted(recipes)
     _recipe_titles = titles
     _recipe_summaries = summaries
+    _recipe_specs = specs
     _recipe_tree = _build_recipe_tree(_recipe_files)
     if _selected_recipe not in _recipe_files:
         _selected_recipe = ""
-        _preview_step_index = 0
-        _start_step_index = 0
 
 
 def _build_recipe_tree(paths: list[str]) -> dict[str, object]:
@@ -134,9 +149,7 @@ def _visible_recipe_files() -> list[str]:
     if not needle:
         return list(_recipe_files)
     return [
-        path
-        for path in _recipe_files
-        if needle in path.lower() or needle in (_recipe_titles.get(path) or "").lower()
+        path for path in _recipe_files if needle in path.lower() or needle in (_recipe_titles.get(path) or "").lower()
     ]
 
 
@@ -160,137 +173,200 @@ def _browser_node() -> dict[str, object]:
 
 
 def _browser_label() -> str:
-    return "/".join(_browser_path) if _browser_path else "modular_data"
+    return "/".join(_browser_path) if _browser_path else "modular_recipes"
 
 
-def _read_recipe(relative_path: str) -> dict[str, Any]:
-    if not relative_path:
-        return {}
-    path = Path(modular_data_root()) / relative_path
+def _spec_display_path(spec: RecipeSpec) -> str:
+    return f"{spec.kind}/{spec.key}"
+
+
+def _selected_spec(relative_path: str) -> RecipeSpec | None:
+    return _recipe_specs.get(relative_path)
+
+
+def _summary_from_spec(spec: RecipeSpec, relative_path: str) -> RecipeSummary:
+    title = str(spec.title).strip() or Path(relative_path).name.replace("_", " ").title()
+    return RecipeSummary(
+        title=title,
+        kind=str(spec.kind),
+        steps=int(spec.steps),
+        module=str(spec.module),
+        factory=str(spec.factory),
+    )
+
+
+def _recipe_module(relative_path: str):
+    spec = _selected_spec(relative_path)
+    if spec is None:
+        return None
     try:
-        recipe = json.loads(path.read_text(encoding="utf-8-sig"))
+        return get_recipe_module(spec)
     except Exception:
-        return {}
-    return recipe if isinstance(recipe, dict) else {}
+        return None
 
 
 def _recipe_summary(relative_path: str) -> RecipeSummary:
-    recipe = _read_recipe(relative_path)
-    title = str(recipe.get("name") or "").strip()
-    if not title:
-        title = Path(relative_path).stem.replace("_", " ").title()
-    steps = recipe.get("steps", [])
-    step_dicts = [step for step in steps if isinstance(step, dict)] if isinstance(steps, list) else []
-    first_step = _step_label(step_dicts[0], 0) if step_dicts else "No steps"
-    kind = Path(relative_path).parts[0] if Path(relative_path).parts else "recipes"
-    anchors = sum(1 for step in step_dicts if bool(step.get("anchor")))
-    return RecipeSummary(title=title, kind=kind, steps=len(step_dicts), anchors=anchors, first_step=first_step)
+    spec = _selected_spec(relative_path)
+    if spec is None:
+        title = Path(relative_path).name.replace("_", " ").title()
+        kind = Path(relative_path).parts[0] if Path(relative_path).parts else "recipes"
+        return RecipeSummary(title=title, kind=kind, steps=0, module="", factory="")
+    return _summary_from_spec(spec, relative_path)
 
 
-def _recipe_steps_for_display(relative_path: str) -> list[dict[str, object]]:
-    recipe = _read_recipe(relative_path)
-    steps = recipe.get("steps", [])
-    if not isinstance(steps, list):
-        return []
-    return [step for step in steps if isinstance(step, dict)]
+def _literal_point(node: ast.AST) -> tuple[float, float] | None:
+    try:
+        value = ast.literal_eval(node)
+    except Exception:
+        return None
+    if not isinstance(value, tuple) or len(value) != 2:
+        return None
+    try:
+        return float(value[0]), float(value[1])
+    except Exception:
+        return None
 
 
-def _step_label(step: dict[str, object], index: int) -> str:
-    title = str(step.get("name") or "").strip()
-    step_type = str(step.get("type") or "").strip()
-    action = str(step.get("action") or step.get("mode") or step.get("target") or "").strip()
-    parts = [f"{index + 1:02d}."]
-    if title:
-        parts.append(title)
-    elif step_type:
-        parts.append(step_type)
-    else:
-        parts.append("Step")
-    detail = ".".join(part for part in (step_type, action) if part)
-    if detail:
-        parts.append(f"({detail})")
-    if bool(step.get("anchor")):
-        parts.append("[anchor]")
-    return " ".join(parts)
-
-
-def _step_type_label(step: dict[str, object]) -> str:
-    step_type = str(step.get("type") or "step").strip()
-    action = str(step.get("action") or step.get("mode") or "").strip()
-    return ".".join(part for part in (step_type, action) if part)
-
-
-def _points_count(step: dict[str, object]) -> int:
-    points = step.get("points")
-    if isinstance(points, list):
-        return len(points)
-    if "x" in step and "y" in step:
-        return 1
-    return 0
-
-
-def _coerce_point(value: object) -> tuple[float, float] | None:
-    if isinstance(value, (list, tuple)) and len(value) >= 2:
-        try:
-            return float(value[0]), float(value[1])
-        except (TypeError, ValueError):
-            return None
-    return None
-
-
-def _step_points(step: dict[str, object]) -> list[tuple[float, float]]:
-    points: list[tuple[float, float]] = []
-    raw_points = step.get("points")
-    if isinstance(raw_points, list):
-        for raw_point in raw_points:
-            point = _coerce_point(raw_point)
-            if point is not None:
-                points.append(point)
-    point = _coerce_point(step.get("point"))
-    if point is not None:
-        points.append(point)
-    if "x" in step and "y" in step:
-        try:
-            points.append((float(step["x"]), float(step["y"])))
-        except (TypeError, ValueError):
-            pass
-    return points
-
-
-def _recipe_route_points(relative_path: str, *, start_step_index: int = 0) -> list[tuple[float, float]]:
-    steps = _recipe_steps_for_display(relative_path)
-    route_points: list[tuple[float, float]] = []
-    for step in steps[max(0, int(start_step_index)) :]:
-        if str(step.get("type") or "").strip() != "route":
+def _points_from_call(node: ast.Call) -> tuple[tuple[float, float], ...]:
+    for keyword in node.keywords:
+        if keyword.arg != "pos":
             continue
-        route_points.extend(_step_points(step))
-    return route_points
+        point = _literal_point(keyword.value)
+        if point is not None:
+            return (point,)
+        if isinstance(keyword.value, ast.List):
+            points = [_literal_point(element) for element in keyword.value.elts]
+            return tuple(point for point in points if point is not None)
+    return ()
+
+
+def _bt_call_name(node: ast.AST) -> str:
+    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+        if isinstance(node.func.value, ast.Name) and node.func.value.id == "BT":
+            return f"BT.{node.func.attr}"
+    return "BT step"
+
+
+def _module_relative_file(module: Any) -> str:
+    path = Path(str(getattr(module, "__file__", ""))).resolve()
+    try:
+        return path.relative_to(Path.cwd()).as_posix()
+    except Exception:
+        return str(path)
+
+
+def _source_steps_for_recipe(relative_path: str) -> tuple[SourceStep, ...]:
+    cached = _source_steps_by_recipe.get(relative_path)
+    if cached is not None:
+        return cached
+    spec = _selected_spec(relative_path)
+    module = _recipe_module(relative_path)
+    if spec is None or module is None or not getattr(module, "__file__", ""):
+        _source_steps_by_recipe[relative_path] = ()
+        return ()
+    path = Path(str(module.__file__)).resolve()
+    try:
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+    except Exception:
+        _source_steps_by_recipe[relative_path] = ()
+        return ()
+
+    steps: list[SourceStep] = []
+    rel_file = _module_relative_file(module)
+    for node in tree.body:
+        if not isinstance(node, ast.FunctionDef) or node.name != spec.factory:
+            continue
+        for child in ast.walk(node):
+            if not isinstance(child, ast.Return) or not isinstance(child.value, ast.Call):
+                continue
+            children_node = next(
+                (keyword.value for keyword in child.value.keywords if keyword.arg == "children"),
+                None,
+            )
+            if not isinstance(children_node, ast.List):
+                continue
+            for index, element in enumerate(children_node.elts):
+                if not isinstance(element, ast.Call):
+                    continue
+                source_segment = ast.get_source_segment(source, element) or _bt_call_name(element)
+                steps.append(
+                    SourceStep(
+                        index=index,
+                        file=rel_file,
+                        line=int(getattr(element, "lineno", 0) or 0),
+                        end_line=int(getattr(element, "end_lineno", getattr(element, "lineno", 0)) or 0),
+                        call=_bt_call_name(element),
+                        source=source_segment.strip(),
+                        points=_points_from_call(element),
+                    )
+                )
+            break
+
+    result = tuple(steps)
+    _source_steps_by_recipe[relative_path] = result
+    return result
+
+
+def _mark_source_step(step: SourceStep, total: int) -> BehaviorTree.Node:
+    def _mark(node: BehaviorTree.Node, step: SourceStep = step, total: int = total) -> BehaviorTree.NodeState:
+        node.blackboard["modular_tester_source_index"] = int(step.index)
+        node.blackboard["modular_tester_source_total"] = int(total)
+        node.blackboard["modular_tester_source_file"] = step.file
+        node.blackboard["modular_tester_source_line"] = int(step.line)
+        node.blackboard["modular_tester_source_end_line"] = int(step.end_line)
+        node.blackboard["modular_tester_source_call"] = step.call
+        node.blackboard["modular_tester_source_text"] = step.source
+        node.blackboard["modular_tester_source_points"] = list(step.points)
+        return BehaviorTree.NodeState.SUCCESS
+
+    return BehaviorTree.ActionNode(
+        name=f"MarkSource({step.index + 1}:{step.call})",
+        action_fn=_mark,
+        aftercast_ms=0,
+    )
+
+
+def _instrument_recipe_tree(tree: BehaviorTree, source_steps: tuple[SourceStep, ...]) -> BehaviorTree:
+    if not source_steps or not isinstance(tree.root, BehaviorTree.SequenceNode):
+        return tree
+    children = list(tree.root.get_children())
+    if not children:
+        return tree
+    wrapped_children: list[BehaviorTree.Node] = []
+    total = len(source_steps)
+    for index, child in enumerate(children):
+        if index < total:
+            wrapped_children.append(_mark_source_step(source_steps[index], total))
+        wrapped_children.append(child)
+    return BehaviorTree(BehaviorTree.SequenceNode(name=tree.root.name, children=wrapped_children))
+
+
+def _instrumented_recipe_factory(spec: RecipeSpec, relative_path: str):
+    base_factory = get_recipe_factory(spec)
+
+    def _factory() -> BehaviorTree:
+        return _instrument_recipe_tree(BehaviorTree.resolve_tree(base_factory), _source_steps_for_recipe(relative_path))
+
+    return _factory
+
+
+def _runtime_mode() -> bool:
+    return _runner_is_running() or _runner_is_paused()
 
 
 def _path_draw_blackboard() -> dict:
-    if _runner is not None:
-        blackboard = _runner.get_runtime_blackboard()
-        points = blackboard.get("move_path_points")
-        if isinstance(points, list) and points:
-            state = str(blackboard.get("move_state") or "")
-            if state in ("running", "paused") or _runner_is_running() or _runner_is_paused():
-                blackboard["move_state"] = "running" if _runner_is_running() else "paused"
-                return blackboard
-
-    points = _recipe_route_points(_selected_recipe_path(), start_step_index=_start_step_index)
-    if not points:
+    if _runner is None:
         return {}
-    current_index = min(max(0, _preview_step_index - _start_step_index), len(points) - 1)
-    return {
-        "move_state": "paused",
-        "move_reason": "selected recipe preview",
-        "move_target": points[-1],
-        "move_path_index": 0,
-        "move_path_count": len(points),
-        "move_path_points": points,
-        "move_current_waypoint": points[current_index],
-        "move_current_waypoint_index": current_index,
-    }
+    blackboard = dict(_runner.blackboard)
+    points = blackboard.get("move_path_points")
+    if not isinstance(points, list) or not points:
+        return {}
+    state = str(blackboard.get("move_state") or "")
+    if state not in ("running", "paused"):
+        return {}
+    blackboard["move_state"] = "running" if _runner_is_running() else "paused"
+    return blackboard
 
 
 def _draw_move_path_overlay() -> None:
@@ -307,31 +383,36 @@ def _draw_move_path_overlay() -> None:
     _path_drawer.DrawMovePathIfEnabled()
 
 
-def _spec_from_relative_path(relative_path: str) -> RecipeSpec:
-    rel = Path(relative_path)
-    if len(rel.parts) < 2:
-        raise ValueError("Recipe must be inside a modular_data subfolder.")
-    kind = rel.parts[0]
-    key = Path(*rel.parts[1:]).with_suffix("").as_posix()
-    title = _recipe_titles.get(relative_path) or Path(relative_path).stem.replace("_", " ").title()
-    return RecipeSpec(kind=kind, key=key, title=title)
-
-
 def _start_selected_recipe() -> None:
-    global _runner, _status, _last_recipe
+    global _runner, _status, _last_recipe, _planner_step_total, _last_active_step_name
     relative_path = _selected_recipe_path()
     if not relative_path:
         _status = "No recipe selected."
         return
     try:
-        runner = BTRecipeRunner(
-            name=f"Modular Tester: {relative_path}",
-            specs=[_spec_from_relative_path(relative_path)],
-            start_step_index=_start_step_index,
-            loop=bool(_loop),
-            debug_hook=_debug,
+        if _runner is not None:
+            _runner.Stop()
+            _runner = None
+        spec = _selected_spec(relative_path)
+        if spec is None:
+            raise ValueError(f"Unknown recipe {relative_path}.")
+        builder = _instrumented_recipe_factory(spec, relative_path)
+        selected_steps = [(f"01. {spec.title or spec.factory}", builder)]
+        _planner_step_total = len(selected_steps)
+        _last_active_step_name = ""
+        runner = BottingTree(
+            bot_name=f"Modular Tester: {relative_path}",
+            pause_on_combat=False,
+            isolation_enabled=False,
         )
-        runner.start()
+        runner.SetCurrentNamedPlannerSteps(
+            selected_steps,
+            name="ModularTester",
+            auto_start=False,
+            reset=True,
+            repeat=bool(_loop),
+        )
+        runner.Start()
         _runner = runner
         _last_recipe = relative_path
         _status = f"Started {relative_path}."
@@ -341,38 +422,63 @@ def _start_selected_recipe() -> None:
 
 
 def _stop_runner() -> None:
-    global _status
+    global _runner, _status, _planner_step_total, _last_active_step_name
     if _runner is not None:
-        _runner.stop()
+        _runner.Stop()
+        _runner = None
+    _planner_step_total = 0
+    _last_active_step_name = ""
     _status = "Stopped."
 
 
 def _pause_runner() -> None:
     global _status
     if _runner is not None:
-        _runner.pause()
+        _runner.Pause(True)
     _status = "Paused."
 
 
 def _resume_runner() -> None:
     global _status
     if _runner is not None:
-        _runner.resume()
+        _runner.Pause(False)
     _status = "Resumed."
 
 
 def _runner_is_running() -> bool:
-    return _runner is not None and bool(_runner.is_running())
+    return _runner is not None and bool(_runner.IsStarted()) and not bool(_runner.IsPaused())
 
 
 def _runner_is_paused() -> bool:
-    return _runner is not None and bool(_runner.is_paused())
+    return _runner is not None and bool(_runner.IsPaused())
+
+
+def _active_step_name() -> str:
+    global _last_active_step_name
+    if _runner is None:
+        return ""
+    current_step_name = str(_runner.GetBlackboardValue("current_step_name", "") or "")
+    if current_step_name:
+        _last_active_step_name = current_step_name
+        return current_step_name
+    return _last_active_step_name
+
+
+def _step_progress() -> tuple[int, int, str, str]:
+    active_step = _active_step_name()
+    if not active_step:
+        return 0, _planner_step_total, _last_recipe, ""
+    return 1, _planner_step_total, _last_recipe, active_step
 
 
 def _progress_fraction() -> float:
     if _runner is None:
         return 0.0
-    step_current, step_total, _recipe_title, _step_title = _runner.get_step_progress()
+    source_total = int(_runner.blackboard.get("modular_tester_source_total", 0) or 0)
+    if source_total > 0:
+        source_index = int(_runner.blackboard.get("modular_tester_source_index", 0))
+        return max(0.0, min(1.0, float(source_index + 1) / float(source_total)))
+    step_current, step_total, _recipe_title, _step_title = _step_progress()
     if step_total <= 0:
         return 0.0
     return max(0.0, min(1.0, float(step_current) / float(step_total)))
@@ -473,6 +579,24 @@ def _quiet_button(label: str, width: float = 0.0) -> bool:
     return clicked
 
 
+def _highlight_button(label: str, width: float = 0.0) -> bool:
+    PyImGui.push_style_color(PyImGui.ImGuiCol.Button, (0.46, 0.11, 0.12, 1.0))
+    PyImGui.push_style_color(PyImGui.ImGuiCol.ButtonHovered, (0.62, 0.15, 0.16, 1.0))
+    PyImGui.push_style_color(PyImGui.ImGuiCol.ButtonActive, (0.36, 0.08, 0.09, 1.0))
+    PyImGui.push_style_color(PyImGui.ImGuiCol.Border, (1.0, 0.38, 0.38, 1.0))
+    PyImGui.push_style_color(PyImGui.ImGuiCol.Text, (1.0, 0.94, 0.94, 1.0))
+    try:
+        PyImGui.push_style_var(PyImGui.ImGuiStyleVar.FrameBorderSize, 2.0)
+        pushed_border_size = True
+    except Exception:
+        pushed_border_size = False
+    clicked = PyImGui.button(label, width, 28)
+    if pushed_border_size:
+        PyImGui.pop_style_var(1)
+    PyImGui.pop_style_color(5)
+    return clicked
+
+
 def _status_color() -> tuple[float, float, float, float]:
     if _runner_is_running():
         return GOOD
@@ -499,7 +623,10 @@ def _draw_top_bar() -> None:
     global _loop, _debug_logging, _draw_move_path, _draw_move_path_labels
     PyImGui.begin_group()
     PyImGui.text_scaled("Modular Tester", ACCENT, 1.22)
-    PyImGui.text_colored("Browse Sources/modular_data, choose a JSON recipe, pick a start step, run it.", MUTED)
+    if _runtime_mode():
+        PyImGui.text_colored("Runtime diagnostics for the active modular recipe.", MUTED)
+    else:
+        PyImGui.text_colored("Browse Python modular recipes, choose one, and run it.", MUTED)
     PyImGui.end_group()
     PyImGui.same_line(max(0.0, PyImGui.get_content_region_avail()[0] - 84.0), 10)
     _draw_text(_status_text(), _status_color())
@@ -508,7 +635,7 @@ def _draw_top_bar() -> None:
     PyImGui.same_line(0, 14)
     _debug_logging = PyImGui.checkbox("Debug logging", _debug_logging)
     PyImGui.same_line(0, 14)
-    _draw_move_path = PyImGui.checkbox("Draw path", _draw_move_path)
+    _draw_move_path = PyImGui.checkbox("Draw live path", _draw_move_path)
     PyImGui.same_line(0, 14)
     _draw_move_path_labels = PyImGui.checkbox("Path labels", _draw_move_path_labels)
 
@@ -637,7 +764,7 @@ def _draw_breadcrumbs() -> None:
     global _browser_path
     PyImGui.text_colored("Path", MUTED)
     PyImGui.same_line(0, 8)
-    if PyImGui.small_button("modular_data##crumb_root"):
+    if PyImGui.small_button("modular_recipes##crumb_root"):
         _browser_path = []
     current: list[str] = []
     for depth, folder in enumerate(_browser_path):
@@ -662,16 +789,14 @@ def _draw_folder_row(folder_name: str) -> None:
 
 
 def _draw_recipe_row(relative_path: str) -> None:
-    global _selected_recipe, _preview_step_index, _start_step_index
+    global _selected_recipe
     summary = _recipe_summaries.get(relative_path) or _recipe_summary(relative_path)
     selected = relative_path == _selected_recipe
     prefix = "* " if selected else "  "
     label = f"{prefix}{summary.title}##recipe_{relative_path}"
     if _selectable_row(label, selected):
         _selected_recipe = relative_path
-        _preview_step_index = 0
-        _start_step_index = 0
-    PyImGui.text_colored(f"  {relative_path}  |  {summary.steps} steps", MUTED)
+    PyImGui.text_colored(f"  {relative_path}  |  {summary.module}:{summary.factory}", MUTED)
 
 
 def _draw_section_title(title: str, meta: str = "") -> None:
@@ -685,28 +810,23 @@ def _draw_recipe_overview() -> None:
     selected = _selected_recipe_path()
     summary = _recipe_summaries.get(selected)
     if not selected or summary is None:
-        PyImGui.text_colored("Select a JSON recipe from Sources/modular_data.", MUTED)
+        PyImGui.text_colored("Select a Python recipe from Sources/modular_recipes.", MUTED)
         return
 
     _draw_section_title(summary.title, summary.kind)
     PyImGui.text_wrapped(selected)
     PyImGui.spacing()
-    if PyImGui.begin_table("##modular_tester_metrics", 3, PyImGui.TableFlags.SizingStretchSame | PyImGui.TableFlags.NoSavedSettings):
+    metric_flags = PyImGui.TableFlags.SizingStretchSame | PyImGui.TableFlags.NoSavedSettings
+    if PyImGui.begin_table("##modular_tester_metrics", 3, metric_flags):
         PyImGui.table_next_row()
         PyImGui.table_set_column_index(0)
-        _draw_metric("Steps", str(summary.steps), ACCENT)
+        _draw_metric("Internal", str(summary.steps), ACCENT)
         PyImGui.table_set_column_index(1)
-        _draw_metric("Anchors", str(summary.anchors), WARN if summary.anchors else MUTED)
+        _draw_metric("Source", str(len(_source_steps_for_recipe(selected))), GOOD)
         PyImGui.table_set_column_index(2)
         _draw_metric("Mode", "Loop" if _loop else "Single", GOOD if _loop else TEXT)
         PyImGui.end_table()
-    start_label = "1"
-    steps = _recipe_steps_for_display(selected)
-    if steps:
-        start_label = f"{_start_step_index + 1}: {_step_label(steps[min(_start_step_index, len(steps) - 1)], min(_start_step_index, len(steps) - 1))}"
-    _draw_label_value("Start at", start_label, ACCENT)
-    route_points = _recipe_route_points(selected, start_step_index=_start_step_index)
-    _draw_label_value("Path preview", f"{len(route_points)} waypoint(s)", GOOD if route_points else MUTED)
+    _draw_label_value("Factory", f"{summary.module}:{summary.factory}", ACCENT)
     PyImGui.spacing()
 
 
@@ -722,29 +842,54 @@ def _draw_progress_panel() -> None:
 
     running = _runner_is_running()
     paused = _runner_is_paused()
-    phase_current, phase_total, phase_title = _runner.get_phase_progress()
-    step_current, step_total, recipe_title, step_title = _runner.get_step_progress()
-    metadata = _runner.get_current_step_metadata()
-    overlay = f"{step_current}/{step_total}" if step_total > 0 else _status_text()
+    step_current, step_total, recipe_title, step_title = _step_progress()
+    source_index = int(_runner.blackboard.get("modular_tester_source_index", -1))
+    source_total = int(_runner.blackboard.get("modular_tester_source_total", 0) or 0)
+    planner_status = str(_runner.GetBlackboardValue("PLANNER_STATUS", "") or "")
+    overlay = f"{source_index + 1}/{source_total}" if source_total > 0 and source_index >= 0 else _status_text()
     PyImGui.progress_bar(_progress_fraction(), -1.0, 0.0, overlay)
     PyImGui.spacing()
     run_state = "Running" if running else "Paused" if paused else "Stopped"
     _draw_label_value("Run", run_state, GOOD if running else WARN)
-    if phase_total > 0:
-        _draw_label_value("Phase", f"{phase_current}/{phase_total} {phase_title}")
+    if planner_status:
+        _draw_label_value("Planner", planner_status)
     if recipe_title:
         _draw_label_value("Recipe", recipe_title)
+    if source_total > 0 and source_index >= 0:
+        _draw_label_value("Source", f"{source_index + 1}/{source_total}", ACCENT)
     if step_total > 0:
-        anchor_label = " anchor" if metadata is not None and bool(metadata.anchor) else ""
-        _draw_label_value("Step", f"{step_current}/{step_total} {step_title}{anchor_label}", ACCENT)
+        _draw_label_value("Phase", f"{step_current}/{step_total} {step_title}", ACCENT)
     else:
-        _draw_label_value("Step", "not started", MUTED)
+        _draw_label_value("Phase", "not started", MUTED)
+    target_error = str(_runner.blackboard.get("modular_target_error", "") or "")
+    if target_error:
+        PyImGui.text_colored("Target", BAD)
+        PyImGui.same_line(0, 6)
+        PyImGui.text_wrapped(target_error)
+    move_state = str(_runner.blackboard.get("move_state", "") or "")
+    if move_state:
+        move_reason = str(_runner.blackboard.get("move_reason", "") or "")
+        _draw_label_value("Move", move_state if not move_reason else f"{move_state}: {move_reason}", GOOD)
+
+
+def _target_issue_available() -> bool:
+    return _runner is not None and bool(str(_runner.blackboard.get("modular_target_error", "") or ""))
 
 
 def _draw_runtime_controls() -> None:
     selected = _selected_recipe_path()
     running = _runner_is_running()
     paused = _runner_is_paused()
+    PyImGui.begin_disabled(_runner is None)
+    if _highlight_button("Copy context", 112):
+        _copy_runtime_context()
+    PyImGui.end_disabled()
+    PyImGui.same_line(0, 6)
+    PyImGui.begin_disabled(not _target_issue_available())
+    if _highlight_button("Copy target issue", 132):
+        _copy_target_issue_context()
+    PyImGui.end_disabled()
+    PyImGui.same_line(0, 6)
     PyImGui.begin_disabled(not selected or running)
     if _primary_button("Run selected", 116):
         _start_selected_recipe()
@@ -766,63 +911,216 @@ def _draw_runtime_controls() -> None:
     PyImGui.end_disabled()
 
 
-def _draw_step_timeline() -> None:
-    global _preview_step_index, _start_step_index
-    selected = _selected_recipe_path()
-    steps = _recipe_steps_for_display(selected)
-    if not steps:
-        PyImGui.text_colored("No selected recipe steps.", MUTED)
+def _fmt_runtime_value(value: Any) -> str:
+    if isinstance(value, float):
+        return f"{value:.0f}"
+    if isinstance(value, tuple):
+        return "(" + ", ".join(_fmt_runtime_value(item) for item in value) + ")"
+    if isinstance(value, list):
+        return "[" + ", ".join(_fmt_runtime_value(item) for item in value) + "]"
+    return str(value)
+
+
+def _append_target_issue_context(lines: list[str], bb: dict) -> None:
+    target_error = str(bb.get("modular_target_error", "") or "")
+    if not target_error:
         return
-    active_index = 0
-    if _runner is not None and selected == _last_recipe:
-        step_current, _step_total, _recipe_title, _step_title = _runner.get_step_progress()
-        active_index = int(step_current or 0)
-    if _preview_step_index >= len(steps):
-        _preview_step_index = max(0, len(steps) - 1)
-    if _start_step_index >= len(steps):
-        _start_step_index = max(0, len(steps) - 1)
-    PyImGui.text_colored("Select a step before running to start from there.", MUTED)
-    if PyImGui.begin_child("##modular_tester_steps", (0, 0), True, PyImGui.WindowFlags.HorizontalScrollbar):
-        for index, step in enumerate(steps):
-            completed = bool(active_index and index + 1 < active_index)
-            active = bool(active_index and index + 1 == active_index)
-            start_step = index == _start_step_index
-            selected_step = index == _preview_step_index
-            row_color = GOOD if completed else ACCENT if active else TEXT
-            if bool(step.get("anchor")) and not active:
-                row_color = WARN
-            start_prefix = "[start] " if start_step and not active else ""
-            label = f"{start_prefix}{_step_label(step, index)}"
-            if _selectable_row(f"{label}##step_{index}", selected_step):
-                _preview_step_index = index
-                if not (_runner_is_running() or _runner_is_paused()):
-                    _start_step_index = index
-            PyImGui.text_colored(f"  {_step_type_label(step)}", row_color if active else MUTED)
+    target_keys = (
+        "modular_target_reason",
+        "modular_target_kind",
+        "modular_target_key",
+        "modular_target_display_name",
+        "modular_target_max_dist",
+        "modular_target_registry_path",
+        "modular_target_collection_path",
+    )
+    lines.append("")
+    lines.append("Target error:")
+    lines.append(f"- message: {target_error}")
+    for key in target_keys:
+        value = bb.get(key)
+        if value not in (None, "", []):
+            lines.append(f"- {key}: {_fmt_runtime_value(value)}")
+
+
+def _runtime_context_text() -> str:
+    selected = _selected_recipe_path() or _last_recipe or "<none>"
+    summary = _recipe_summaries.get(selected)
+    spec = _selected_spec(selected)
+    step = _current_source_step_from_blackboard()
+    bb = _runner.blackboard if _runner is not None else {}
+
+    lines = [
+        "Modular Tester stuck context",
+        f"Run state: {_status_text()}",
+        f"Status: {_status or '<none>'}",
+        f"Recipe: {selected}",
+    ]
+    if summary is not None:
+        lines.append(f"Title: {summary.title}")
+    if spec is not None:
+        lines.append(f"Factory: {spec.module}:{spec.factory}")
+
+    planner_status = str(bb.get("PLANNER_STATUS", "") or "")
+    if planner_status:
+        lines.append(f"Planner: {planner_status}")
+    current_step_name = str(bb.get("current_step_name", "") or _last_active_step_name or "")
+    if current_step_name:
+        lines.append(f"Phase: {current_step_name}")
+
+    source_total = int(bb.get("modular_tester_source_total", 0) or 0)
+    if step is not None:
+        lines.extend(
+            [
+                "",
+                "Current source:",
+                f"- Progress: {step.index + 1}/{source_total}" if source_total > 0 else f"- Progress: {step.index + 1}",
+                f"- Location: {step.file}:{step.line}",
+                f"- Call: {step.call}",
+                "```python",
+                step.source,
+                "```",
+            ]
+        )
+    else:
+        lines.extend(["", "Current source:", "- <not marked yet>"])
+
+    _append_target_issue_context(lines, bb)
+
+    move_keys = (
+        "move_state",
+        "move_reason",
+        "move_target",
+        "move_path_index",
+        "move_path_count",
+        "move_current_waypoint",
+        "move_current_waypoint_index",
+        "move_last_move_point",
+        "move_current_pause_reason",
+        "move_resume_recovery_active",
+        "move_resume_recovery_reason",
+        "move_stall_retry_count",
+    )
+    lines.append("")
+    lines.append("Move blackboard:")
+    found_move_value = False
+    for key in move_keys:
+        if key in bb and bb.get(key) not in (None, "", []):
+            found_move_value = True
+            lines.append(f"- {key}: {_fmt_runtime_value(bb.get(key))}")
+    if not found_move_value:
+        lines.append("- <no active move data>")
+
+    if step is not None and step.points:
+        lines.append("")
+        lines.append("Source waypoints:")
+        current_index = int(bb.get("move_current_waypoint_index", -1))
+        for index, point in enumerate(step.points):
+            marker = ">" if index == current_index else "-"
+            lines.append(f"{marker} {index + 1}. ({point[0]:.0f}, {point[1]:.0f})")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _copy_runtime_context() -> None:
+    global _status
+    PyImGui.set_clipboard_text(_runtime_context_text())
+    _status = "Copied runtime context."
+
+
+def _copy_target_issue_context() -> None:
+    global _status
+    PyImGui.set_clipboard_text(_runtime_context_text())
+    _status = "Copied target issue context."
+
+
+def _current_source_step_from_blackboard() -> SourceStep | None:
+    if _runner is None:
+        return None
+    bb = _runner.blackboard
+    line = int(bb.get("modular_tester_source_line", 0) or 0)
+    if line <= 0:
+        return None
+    raw_points = bb.get("modular_tester_source_points", [])
+    points: list[tuple[float, float]] = []
+    if isinstance(raw_points, list):
+        for point in raw_points:
+            if isinstance(point, tuple) and len(point) == 2:
+                points.append((float(point[0]), float(point[1])))
+    return SourceStep(
+        index=int(bb.get("modular_tester_source_index", 0)),
+        file=str(bb.get("modular_tester_source_file", "") or ""),
+        line=line,
+        end_line=int(bb.get("modular_tester_source_end_line", line) or line),
+        call=str(bb.get("modular_tester_source_call", "") or "BT step"),
+        source=str(bb.get("modular_tester_source_text", "") or ""),
+        points=tuple(points),
+    )
+
+
+def _draw_source_text(step: SourceStep) -> None:
+    PyImGui.text_colored(f"{step.file}:{step.line}", ACCENT)
+    source_lines = step.source.splitlines() or [step.call]
+    if PyImGui.begin_child("##modular_tester_current_source", (0, 150), True, PyImGui.WindowFlags.HorizontalScrollbar):
+        for offset, line in enumerate(source_lines):
+            line_no = step.line + offset
+            color = GOOD if offset == 0 else TEXT
+            PyImGui.text_colored(f"{line_no:04d}: {line}", color)
     PyImGui.end_child()
 
 
-def _draw_step_detail() -> None:
-    global _start_step_index
-    selected = _selected_recipe_path()
-    steps = _recipe_steps_for_display(selected)
-    if not steps:
-        PyImGui.text_colored("No step selected.", MUTED)
+def _draw_current_waypoint(step: SourceStep) -> None:
+    if _runner is None:
         return
-    index = min(max(0, _preview_step_index), len(steps) - 1)
-    step = steps[index]
-    _draw_section_title(_step_label(step, index), f"{index + 1}/{len(steps)}")
-    PyImGui.begin_disabled(_runner_is_running() or _runner_is_paused())
-    if _primary_button("Start from this step", 170):
-        _start_step_index = index
-    PyImGui.end_disabled()
+    bb = _runner.blackboard
+    move_state = str(bb.get("move_state", "") or "")
+    if move_state not in ("running", "paused") or not step.points:
+        return
+    current_index = int(bb.get("move_current_waypoint_index", -1))
+    current_raw = bb.get("move_current_waypoint")
+    current_text = ""
+    if isinstance(current_raw, tuple) and len(current_raw) == 2:
+        current_text = f" x={float(current_raw[0]):.0f}, y={float(current_raw[1]):.0f}"
     PyImGui.spacing()
-    if PyImGui.begin_table("##modular_tester_step_detail", 2, PyImGui.TableFlags.SizingStretchProp | PyImGui.TableFlags.RowBg):
-        _draw_detail_row("Type", str(step.get("type") or ""))
-        _draw_detail_row("Action", str(step.get("action") or step.get("mode") or ""))
-        _draw_detail_row("Target", str(step.get("target") or step.get("npc") or step.get("gadget") or ""))
-        _draw_detail_row("Map", str(step.get("map_id") or step.get("target_map_id") or step.get("map") or ""))
-        _draw_detail_row("Points", str(_points_count(step)))
-        _draw_detail_row("Anchor", "yes" if bool(step.get("anchor")) else "no")
+    _draw_label_value("Waypoint", f"{current_index + 1}/{len(step.points)}{current_text}", GOOD)
+    for index, point in enumerate(step.points):
+        color = GOOD if index == current_index else MUTED
+        prefix = ">" if index == current_index else " "
+        PyImGui.text_colored(f"{prefix} {index + 1:02d}. ({point[0]:.0f}, {point[1]:.0f})", color)
+
+
+def _draw_current_source_panel() -> None:
+    step = _current_source_step_from_blackboard()
+    if step is None:
+        PyImGui.text_colored("Waiting for the first recipe step.", MUTED)
+        return
+    total = 0
+    if _runner is not None:
+        total = int(_runner.blackboard.get("modular_tester_source_total", 0) or 0)
+    _draw_section_title("Current Code", f"{step.index + 1}/{total}" if total > 0 else "")
+    _draw_label_value("Call", step.call, ACCENT)
+    _draw_source_text(step)
+    _draw_current_waypoint(step)
+
+
+def _draw_recipe_detail() -> None:
+    selected = _selected_recipe_path()
+    spec = _selected_spec(selected)
+    summary = _recipe_summaries.get(selected)
+    if spec is None or summary is None:
+        PyImGui.text_colored("No recipe selected.", MUTED)
+        return
+    _draw_section_title(summary.title, spec.kind)
+    PyImGui.spacing()
+    detail_flags = PyImGui.TableFlags.SizingStretchProp | PyImGui.TableFlags.RowBg
+    if PyImGui.begin_table("##modular_tester_recipe_detail", 2, detail_flags):
+        _draw_detail_row("Kind", spec.kind)
+        _draw_detail_row("Key", spec.key)
+        _draw_detail_row("Module", spec.module)
+        _draw_detail_row("Function", spec.factory)
+        _draw_detail_row("Internal actions", str(spec.source_steps))
+        _draw_detail_row("Raw legacy actions", str(spec.raw_steps))
+        _draw_detail_row("Source steps", str(len(_source_steps_for_recipe(selected))))
         PyImGui.end_table()
 
 
@@ -844,16 +1142,44 @@ def _draw_right_panel() -> None:
         PyImGui.text_colored(_status, _status_color())
     PyImGui.separator()
     if PyImGui.begin_tab_bar("##modular_tester_tabs", PyImGui.TabBarFlags.NoFlag):
-        if PyImGui.begin_tab_item("Timeline"):
-            _draw_step_timeline()
-            PyImGui.end_tab_item()
-        if PyImGui.begin_tab_item("Step Detail"):
-            _draw_step_detail()
+        if PyImGui.begin_tab_item("Recipe Detail"):
+            _draw_recipe_detail()
             PyImGui.end_tab_item()
         PyImGui.end_tab_bar()
 
 
+def _draw_runtime_dashboard() -> None:
+    _draw_runtime_controls()
+    PyImGui.spacing()
+    _draw_progress_panel()
+    if _status:
+        PyImGui.spacing()
+        PyImGui.text_colored(_status, _status_color())
+    PyImGui.separator()
+    if PyImGui.begin_table(
+        "##modular_tester_runtime_grid", 2, PyImGui.TableFlags.Resizable | PyImGui.TableFlags.SizingStretchProp
+    ):
+        PyImGui.table_setup_column("##runtime_current", PyImGui.TableColumnFlags.WidthStretch)
+        PyImGui.table_setup_column("##runtime_detail", PyImGui.TableColumnFlags.WidthStretch)
+        PyImGui.table_next_row()
+        PyImGui.table_set_column_index(0)
+        _draw_current_source_panel()
+        PyImGui.table_set_column_index(1)
+        _draw_recipe_detail()
+        PyImGui.end_table()
+    else:
+        _draw_current_source_panel()
+        PyImGui.separator()
+        _draw_recipe_detail()
+
+
 def _draw_main_layout() -> None:
+    if _runtime_mode():
+        if PyImGui.begin_child("##modular_tester_runtime", (0, 0), True, PyImGui.WindowFlags.NoFlag):
+            _draw_runtime_dashboard()
+        PyImGui.end_child()
+        return
+
     flags = PyImGui.TableFlags.Resizable | PyImGui.TableFlags.SizingStretchProp | PyImGui.TableFlags.BordersInnerV
     if PyImGui.begin_table("##modular_tester_layout", 2, flags, 0.0, 0.0):
         PyImGui.table_setup_column("##recipes", PyImGui.TableColumnFlags.WidthFixed, 320.0)
@@ -875,8 +1201,8 @@ def _draw_main_layout() -> None:
 
 
 def _main_impl() -> None:
-    if _runner is not None and _runner.is_running():
-        _runner.update()
+    if _runner is not None and _runner_is_running():
+        _runner.tick()
 
     PyImGui.set_next_window_size((880, 640), PyImGui.ImGuiCond.FirstUseEver)
     PyImGui.set_next_window_bg_alpha(1.0)
@@ -893,7 +1219,7 @@ def _main_impl() -> None:
 
 
 def main() -> None:
-    guarded_widget_main(MODULE_NAME, _main_impl, get_bot=lambda: _runner)
+    guarded_widget_main(MODULE_NAME, _main_impl)
 
 
 def tooltip() -> None:
@@ -901,7 +1227,7 @@ def tooltip() -> None:
     PyImGui.begin_tooltip()
     PyImGui.text(MODULE_NAME)
     PyImGui.separator()
-    PyImGui.text_wrapped("Run one canonical modular JSON recipe through the BT compiler.")
+    PyImGui.text_wrapped("Run one Python modular BottingTree recipe.")
     PyImGui.text_wrapped("Use this for checking a newly recorded bot before adding it to a campaign.")
     PyImGui.end_tooltip()
 

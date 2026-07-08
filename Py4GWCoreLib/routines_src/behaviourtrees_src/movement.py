@@ -389,7 +389,18 @@ class BTMovement:
             if Checks.Player.IsDead():
                 return "player_dead"
             if pause_on_combat and bool(node.blackboard.get("COMBAT_ACTIVE", False)):
-                return "combat"
+                from ..Agents import Agents as RoutinesAgents
+
+                combat_distance = float(Range.Earshot.value)
+                cached_data = node.blackboard.get("headless_heroai_cached_data")
+                if cached_data is not None and hasattr(cached_data, "GetActiveScanRange"):
+                    try:
+                        combat_distance = max(1.0, float(cached_data.GetActiveScanRange()))
+                    except Exception:
+                        combat_distance = float(Range.Earshot.value)
+                if int(RoutinesAgents.GetNearestEnemy(combat_distance) or 0) > 0:
+                    return "combat"
+                node.blackboard["COMBAT_ACTIVE_STALE"] = True
             if bool(node.blackboard.get(pause_flag_key, False)):
                 return "external_pause"
             if Checks.Player.IsCasting():

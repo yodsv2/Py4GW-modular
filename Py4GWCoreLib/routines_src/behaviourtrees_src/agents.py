@@ -885,7 +885,7 @@ class BTAgents:
                   Notes: Filters dead enemies out before sorting by player distance.
                 """
                 enemy_array = list(RoutinesAgents.GetFilteredEnemyArray(x, y, radius) or [])
-                enemy_array = [agent_id for agent_id in enemy_array if Agent.IsAlive(agent_id)]
+                enemy_array = [agent_id for agent_id in enemy_array if Agent.IsValid(agent_id) and Agent.IsAlive(agent_id)]
                 enemy_array.sort(key=lambda agent_id: Utils.Distance(Player.GetXY(), Agent.GetXY(agent_id)))
                 return enemy_array
 
@@ -1010,7 +1010,7 @@ class BTAgents:
 
             def _get_enemies_in_area() -> list[int]:
                 enemy_array = list(RoutinesAgents.GetFilteredEnemyArray(x, y, radius) or [])
-                enemy_array = [agent_id for agent_id in enemy_array if Agent.IsAlive(agent_id)]
+                enemy_array = [agent_id for agent_id in enemy_array if Agent.IsValid(agent_id) and Agent.IsAlive(agent_id)]
                 enemy_array.sort(key=lambda agent_id: Utils.Distance(Player.GetXY(), Agent.GetXY(agent_id)))
                 return enemy_array
 

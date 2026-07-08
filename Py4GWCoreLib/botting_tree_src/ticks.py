@@ -10,6 +10,22 @@ from .account_config import BottingTreeAccountConfig
 from .enums import HeroAIStatus, PlannerStatus
 
 
+def _active_combat_scan_range(cached_data: Any) -> float:
+    if cached_data is not None and hasattr(cached_data, 'GetActiveScanRange'):
+        try:
+            return max(1.0, float(cached_data.GetActiveScanRange()))
+        except Exception:
+            pass
+    return 4500.0
+
+
+def _has_live_enemy_for_combat_pause(cached_data: Any) -> bool:
+    try:
+        return int(Routines.Agents.GetNearestEnemy(_active_combat_scan_range(cached_data)) or 0) > 0
+    except Exception:
+        return True
+
+
 class _BottingTreeTicksHost(Protocol):
     account_config: BottingTreeAccountConfig
     started: bool
@@ -156,7 +172,11 @@ class BottingTreeTicksMixin:
         bb['PAUSE_MOVEMENT'] = bool(bb['LOOTING_ACTIVE'] or bb['USER_INTERRUPT_ACTIVE'])
         bb['HEROAI_BUILD_CONTRACT'] = self.headless_heroai.GetBuildContractName()
 
-        combat_active = bool(self.headless_heroai.cached_data.IsHeadlessCombatPauseActive())
+        raw_combat_active = bool(self.headless_heroai.cached_data.IsHeadlessCombatPauseActive())
+        live_enemy_for_combat = _has_live_enemy_for_combat_pause(self.headless_heroai.cached_data)
+        combat_active = raw_combat_active and live_enemy_for_combat
+        bb['COMBAT_ACTIVE_RAW'] = raw_combat_active
+        bb['COMBAT_LIVE_ENEMY_FOUND'] = live_enemy_for_combat
 
         if combat_active:
             if self._last_heroai_state != 'combat':
