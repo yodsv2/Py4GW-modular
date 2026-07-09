@@ -27,6 +27,7 @@ Logs/*
 
 # Ignore generated modular tool widget config
 Sources/modular_data/tools/Widgets/Config/
+Widgets/Automation/modular/*.run_state.json
 
 imgui.ini
 Inject.au3

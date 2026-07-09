@@ -108,6 +108,23 @@ NPC_TARGETS: dict[str, AgentTargetValue] = {
     "KOPP_THE_QUICK": (((2, 129, 234, 60, 21, 146, 19, 221, 238, 23, 0, 0),), "Kopp the Quick"),
     "OLD_ASCALON_SPIRIT": (((205, 54, 211, 160, 203, 197, 36, 15, 0, 0),), "Old Ascalon Spirit"),
     "VIGGO": (((83, 55, 31, 173, 152, 207, 20, 15, 0, 0),), "Viggo"),
+    "ANCIENT_SEER": (((116, 60, 76, 236, 8, 212, 98, 105, 0, 0),), "Ancient Seer"),
+    "GHOSTLY_HERO": (
+        (
+            (87, 49, 160, 133, 152, 250, 202, 124, 0, 0),
+            (72, 50, 237, 173, 158, 221, 43, 90, 0, 0),
+            (149, 49, 37, 148, 190, 171, 167, 64, 0, 0),
+            (94, 50, 166, 245, 208, 203, 208, 61, 0, 0),
+        ),
+        "Ghostly Hero",
+    ),
+    "GHOSTLY_PRIEST": (((72, 50, 237, 173, 158, 221, 43, 90, 0, 0),), "Ghostly Priest"),
+    "GREAT_RITUAL_PRIEST_ZAHMUT": (
+        ((31, 50, 64, 134, 131, 134, 255, 42, 0, 0),),
+        "Great Ritual Priest Zahmut",
+    ),
+    "FORGOTTEN_GATE_KEEPER": (((193, 49, 84, 241, 75, 209, 173, 53, 0, 0),), "Forgotten Gate Keeper"),
+    "KING_JALIS_IRONHAMMER": (((158, 57, 25, 138, 182, 195, 228, 47, 0, 0),), "King Jalis Ironhammer"),
     "CASTELLAN_PUUBA": (((1, 129, 82, 32, 155, 168, 95, 159, 72, 69, 0, 0),), "Castellan Puuba"),
     "FIELD_GENERAL_HAYAO": (((1, 129, 55, 56, 139, 170, 251, 224, 167, 63, 0, 0),), "Field General Hayao"),
     "GENERAL_YURUKARO": (((1, 129, 53, 56, 201, 154, 61, 191, 33, 5, 0, 0),), "General Yurukaro"),
@@ -343,6 +360,7 @@ NPC_TARGETS: dict[str, AgentTargetValue] = {
 }
 
 ENEMY_TARGETS: dict[str, AgentTargetValue] = {
+    "DOPPELGANGER": (((52, 50, 129, 196, 203, 247, 225, 84, 0, 0),), "Doppelganger"),
     "INFERNAL_WURM": (((225, 20, 149, 206, 31, 225, 185, 90, 0, 0),), "Infernal Wurm"),
     "SHARD_WOLF": (((77, 31, 140, 221, 57, 157, 245, 44, 0, 0),), "Shard Wolf"),
     "WAILING_LORD": (((26, 31, 5, 191, 239, 149, 25, 80, 0, 0),), "Wailing Lord"),

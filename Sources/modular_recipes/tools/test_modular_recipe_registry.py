@@ -47,6 +47,9 @@ def main() -> int:
     ascalon_module = get_recipe_module(ascalon_spec)
     assert hasattr(ascalon_module, "the_great_northern_wall")
     assert hasattr(ascalon_module, "fort_ranik")
+    desert_spec = get_spec("mission", "prophecies/dunes_of_despair")
+    assert desert_spec.module == "Sources.modular_recipes.missions.prophecies.crystal_desert"
+    assert get_recipe_factory(desert_spec).__name__ == "dunes_of_despair"
 
     prophecies_specs = build_prophecies_campaign_specs()
     assert len(prophecies_specs) == len(PROPHECIES_PHASE_SPECS)

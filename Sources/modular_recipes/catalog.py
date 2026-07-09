@@ -25,6 +25,7 @@ RECIPE_MODULES: tuple[str, ...] = (
     'Sources.modular_recipes.missions.nightfall.realm_of_torment',
     'Sources.modular_recipes.missions.nightfall.vabbi',
     'Sources.modular_recipes.missions.prophecies.ascalon',
+    'Sources.modular_recipes.missions.prophecies.crystal_desert',
     'Sources.modular_recipes.missions.prophecies.kryta',
     'Sources.modular_recipes.missions.prophecies.maguuma_jungle',
     'Sources.modular_recipes.missions.prophecies.northern_shiverpeaks',

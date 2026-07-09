@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,7 @@ from Widgets.Automation.modular.widget_guard import guarded_widget_main
 MODULE_NAME = "Modular Tester"
 MODULE_ICON = "Textures/Module_Icons/Route Planner.png"
 MODULE_TAGS = ["Automation", "modular_bot"]
+STATE_PATH = Path(__file__).with_suffix(".run_state.json")
 
 ACCENT = (0.30, 0.78, 0.86, 1.0)
 GOOD = (0.42, 0.88, 0.55, 1.0)
@@ -30,6 +32,10 @@ WARN = (1.00, 0.78, 0.32, 1.0)
 BAD = (1.00, 0.38, 0.38, 1.0)
 MUTED = (0.62, 0.66, 0.70, 1.0)
 TEXT = (0.92, 0.94, 0.96, 1.0)
+RUN_PENDING = "pending"
+RUN_SUCCESS = "success"
+RUN_FAILED = "failed"
+RUN_RUNNING = "running"
 WINDOW_BG = (0.055, 0.070, 0.085, 0.985)
 PANEL_BG = (0.080, 0.100, 0.120, 0.965)
 PANEL_ALT_BG = (0.105, 0.125, 0.145, 0.965)
@@ -72,6 +78,8 @@ _planner_step_total = 0
 _last_active_step_name = ""
 _status = ""
 _last_recipe = ""
+_recipe_run_states: dict[str, str] = {}
+_run_states_loaded = False
 _loop = False
 _debug_logging = False
 _draw_move_path = True
@@ -99,6 +107,50 @@ _path_drawer = _TesterMovePathDrawer()
 _source_steps_by_recipe: dict[str, tuple[SourceStep, ...]] = {}
 
 
+def _valid_run_state(value: object) -> str:
+    text = str(value or "").strip()
+    if text in {RUN_SUCCESS, RUN_FAILED, RUN_RUNNING}:
+        return text
+    return RUN_PENDING
+
+
+def _load_run_states() -> None:
+    global _run_states_loaded, _recipe_run_states
+    if _run_states_loaded:
+        return
+    _run_states_loaded = True
+    if not STATE_PATH.exists():
+        return
+    try:
+        raw = json.loads(STATE_PATH.read_text(encoding="utf-8"))
+    except Exception as exc:
+        ConsoleLog(MODULE_NAME, f"Run state load failed: {exc}", Console.MessageType.Warning)
+        return
+    recipes = raw.get("recipes", {}) if isinstance(raw, dict) else {}
+    if not isinstance(recipes, dict):
+        return
+    _recipe_run_states = {
+        str(recipe): state
+        for recipe, raw_state in recipes.items()
+        if (state := _valid_run_state(raw_state)) in {RUN_SUCCESS, RUN_FAILED}
+    }
+
+
+def _save_run_states() -> None:
+    try:
+        payload = {
+            "version": 1,
+            "recipes": {
+                recipe: state
+                for recipe, state in sorted(_recipe_run_states.items())
+                if state in {RUN_SUCCESS, RUN_FAILED}
+            },
+        }
+        STATE_PATH.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    except Exception as exc:
+        ConsoleLog(MODULE_NAME, f"Run state save failed: {exc}", Console.MessageType.Warning)
+
+
 def _debug(message: str) -> None:
     if _debug_logging:
         ConsoleLog(MODULE_NAME, message, Console.MessageType.Info)
@@ -107,6 +159,7 @@ def _debug(message: str) -> None:
 def _refresh_recipe_files() -> None:
     global _recipe_files, _recipe_tree, _recipe_titles, _recipe_summaries, _recipe_specs
     global _selected_recipe
+    _load_run_states()
     recipes: list[str] = []
     titles: dict[str, str] = {}
     summaries: dict[str, RecipeSummary] = {}
@@ -383,6 +436,63 @@ def _draw_move_path_overlay() -> None:
     _path_drawer.DrawMovePathIfEnabled()
 
 
+def _recipe_run_state(relative_path: str) -> str:
+    return _recipe_run_states.get(relative_path, RUN_PENDING)
+
+
+def _set_recipe_run_state(relative_path: str, state: str) -> None:
+    if not relative_path:
+        return
+    if state == RUN_PENDING:
+        _recipe_run_states.pop(relative_path, None)
+        _save_run_states()
+        return
+    _recipe_run_states[relative_path] = state
+    if state in {RUN_SUCCESS, RUN_FAILED}:
+        _save_run_states()
+
+
+def _reset_recipe_run_states() -> None:
+    global _status
+    _recipe_run_states.clear()
+    _save_run_states()
+    _status = "Recipe run states reset."
+
+
+def _mark_runner_finished(success: bool, reason: str = "") -> None:
+    global _runner, _status, _planner_step_total, _last_active_step_name
+    recipe = _last_recipe or _selected_recipe_path()
+    _set_recipe_run_state(recipe, RUN_SUCCESS if success else RUN_FAILED)
+    _planner_step_total = 0
+    _last_active_step_name = ""
+    _status = f"{'Completed' if success else 'Ended early'} {recipe}." if recipe else reason
+
+
+def _tick_runner() -> None:
+    global _status
+    if _runner is None or not _runner_is_running():
+        return
+    try:
+        _runner.tick()
+    except Exception as exc:
+        _mark_runner_finished(False, str(exc))
+        if _runner is not None:
+            try:
+                _runner.Stop()
+            except Exception:
+                pass
+        _status = f"Run failed: {exc}"
+        return
+
+    if _runner is None or _runner_is_running() or _runner_is_paused():
+        return
+    planner_status = str(_runner.GetBlackboardValue("PLANNER_STATUS", "") or "")
+    if planner_status == "PLANNER: Completed":
+        _mark_runner_finished(True, planner_status)
+    elif planner_status == "PLANNER: Failed":
+        _mark_runner_finished(False, planner_status)
+
+
 def _start_selected_recipe() -> None:
     global _runner, _status, _last_recipe, _planner_step_total, _last_active_step_name
     relative_path = _selected_recipe_path()
@@ -390,8 +500,11 @@ def _start_selected_recipe() -> None:
         _status = "No recipe selected."
         return
     try:
-        if _runner is not None:
+        if _runner is not None and (_runner_is_running() or _runner_is_paused()):
+            _mark_runner_finished(False, "Superseded")
             _runner.Stop()
+            _runner = None
+        elif _runner is not None:
             _runner = None
         spec = _selected_spec(relative_path)
         if spec is None:
@@ -415,20 +528,26 @@ def _start_selected_recipe() -> None:
         runner.Start()
         _runner = runner
         _last_recipe = relative_path
+        _set_recipe_run_state(relative_path, RUN_RUNNING)
         _status = f"Started {relative_path}."
     except Exception as exc:
         _runner = None
+        _set_recipe_run_state(relative_path, RUN_FAILED)
         _status = f"Start failed: {exc}"
 
 
 def _stop_runner() -> None:
     global _runner, _status, _planner_step_total, _last_active_step_name
+    had_active_runner = _runner is not None and (_runner_is_running() or _runner_is_paused())
     if _runner is not None:
         _runner.Stop()
         _runner = None
     _planner_step_total = 0
     _last_active_step_name = ""
-    _status = "Stopped."
+    if had_active_runner:
+        _mark_runner_finished(False, "Stopped")
+    else:
+        _status = "Stopped."
 
 
 def _pause_runner() -> None:
@@ -597,6 +716,57 @@ def _highlight_button(label: str, width: float = 0.0) -> bool:
     return clicked
 
 
+def _run_state_button_style(state: str, selected: bool) -> tuple[
+    tuple[float, float, float, float],
+    tuple[float, float, float, float],
+    tuple[float, float, float, float],
+    tuple[float, float, float, float],
+]:
+    if state == RUN_SUCCESS:
+        base = (0.18, 0.46, 0.24, 1.0)
+        hover = (0.24, 0.60, 0.32, 1.0)
+        active = (0.13, 0.36, 0.18, 1.0)
+        text = (0.92, 1.0, 0.94, 1.0)
+    elif state == RUN_FAILED:
+        base = (0.54, 0.16, 0.18, 1.0)
+        hover = (0.70, 0.22, 0.24, 1.0)
+        active = (0.40, 0.10, 0.12, 1.0)
+        text = (1.0, 0.94, 0.94, 1.0)
+    elif state == RUN_RUNNING:
+        base = (0.10, 0.40, 0.50, 1.0)
+        hover = (0.12, 0.53, 0.64, 1.0)
+        active = (0.08, 0.32, 0.40, 1.0)
+        text = (0.90, 0.98, 1.0, 1.0)
+    else:
+        base = (0.64, 0.46, 0.10, 1.0)
+        hover = (0.78, 0.58, 0.14, 1.0)
+        active = (0.48, 0.34, 0.08, 1.0)
+        text = (1.0, 0.98, 0.88, 1.0)
+    if selected:
+        base = tuple(min(1.0, channel + 0.08) if index < 3 else channel for index, channel in enumerate(base))
+    return base, hover, active, text
+
+
+def _recipe_button(label: str, relative_path: str, selected: bool, width: float = 0.0) -> bool:
+    state = _recipe_run_state(relative_path)
+    base, hover, active, text = _run_state_button_style(state, selected)
+    _draw_button_style(base, hover, active)
+    PyImGui.push_style_color(PyImGui.ImGuiCol.Text, text)
+    PyImGui.push_style_color(PyImGui.ImGuiCol.Border, ACCENT if selected else BORDER)
+    pushed_border_size = False
+    try:
+        PyImGui.push_style_var(PyImGui.ImGuiStyleVar.FrameBorderSize, 2.0 if selected else 1.0)
+        pushed_border_size = True
+    except Exception:
+        pass
+    clicked = PyImGui.button(label, width, 28)
+    if pushed_border_size:
+        PyImGui.pop_style_var(1)
+    PyImGui.pop_style_color(2)
+    _pop_button_style()
+    return clicked
+
+
 def _status_color() -> tuple[float, float, float, float]:
     if _runner_is_running():
         return GOOD
@@ -690,6 +860,11 @@ def _draw_selection_controls() -> None:
     PyImGui.begin_disabled(not (running or paused))
     if _danger_button("Stop", 52):
         _stop_runner()
+    PyImGui.end_disabled()
+    PyImGui.same_line(0, 6)
+    PyImGui.begin_disabled(not _recipe_run_states)
+    if _quiet_button("Reset states", 96):
+        _reset_recipe_run_states()
     PyImGui.end_disabled()
 
 
@@ -792,9 +967,14 @@ def _draw_recipe_row(relative_path: str) -> None:
     global _selected_recipe
     summary = _recipe_summaries.get(relative_path) or _recipe_summary(relative_path)
     selected = relative_path == _selected_recipe
-    prefix = "* " if selected else "  "
-    label = f"{prefix}{summary.title}##recipe_{relative_path}"
-    if _selectable_row(label, selected):
+    status = _recipe_run_state(relative_path)
+    status_label = {
+        RUN_SUCCESS: "done",
+        RUN_FAILED: "failed",
+        RUN_RUNNING: "running",
+    }.get(status, "pending")
+    label = f"{summary.title}  [{status_label}]##recipe_{relative_path}"
+    if _recipe_button(label, relative_path, selected, max(120.0, PyImGui.get_content_region_avail()[0])):
         _selected_recipe = relative_path
     PyImGui.text_colored(f"  {relative_path}  |  {summary.module}:{summary.factory}", MUTED)
 
@@ -1201,8 +1381,7 @@ def _draw_main_layout() -> None:
 
 
 def _main_impl() -> None:
-    if _runner is not None and _runner_is_running():
-        _runner.tick()
+    _tick_runner()
 
     PyImGui.set_next_window_size((880, 640), PyImGui.ImGuiCond.FirstUseEver)
     PyImGui.set_next_window_bg_alpha(1.0)

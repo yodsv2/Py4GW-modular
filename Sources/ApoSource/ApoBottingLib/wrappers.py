@@ -3092,6 +3092,17 @@ def DropBundle(log: bool = False) -> BehaviorTree:
     return RoutinesBT.Party.DropBundle(log=log)
 
 
+def SetAutoCombat(enabled: bool, preferred_engine: str | None = None) -> BehaviorTree:
+    def _set(_node: BehaviorTree.Node) -> BehaviorTree.NodeState:
+        from Py4GWCoreLib.routines_src.behaviourtrees_src.botting_combat_toggles import set_auto_combat
+
+        set_auto_combat(bool(enabled), preferred_engine=preferred_engine)
+        return BehaviorTree.NodeState.SUCCESS
+
+    state = "Enabled" if enabled else "Disabled"
+    return _modular_action_tree(f"SetAutoCombat::{state}", _set, aftercast_ms=250)
+
+
 def EnemyBlacklist(enemy: str, mode: str = "add") -> BehaviorTree:
     def _update(_node: BehaviorTree.Node) -> BehaviorTree.NodeState:
         from Py4GWCoreLib.EnemyBlacklist import EnemyBlacklist as EnemyBlacklistStore
@@ -3190,7 +3201,6 @@ def InviteAccountByEmail(
         poll_interval_ms=poll_interval_ms,
         log=log,
     )
-
 
 
 def CreateParty(
@@ -3386,6 +3396,44 @@ def PressKeybind(keybind_index: int, duration_ms: int = 75, log: bool = False) -
     )
 
 
+def PressKey(key: str, aftercast_ms: int = 75, log: bool = False) -> BehaviorTree:
+    aliases = {
+        "ESC": "Escape",
+        "ESCAPE": "Escape",
+        "ENTER": "Enter",
+        "F1": "F1",
+        "F2": "F2",
+        "SPACE": "Space",
+    }
+    mapped = aliases.get(str(key or "").strip().upper())
+    if mapped is None:
+        return Failer(name=f"UnsupportedKey::{key}")
+
+    def _press(_node: BehaviorTree.Node) -> BehaviorTree.NodeState:
+        from Py4GWCoreLib import Keystroke
+
+        key_value = getattr(Key, mapped)
+        scan_code = int(getattr(key_value, "value", key_value))
+        Keystroke.PressAndRelease(scan_code)
+        return BehaviorTree.NodeState.SUCCESS
+
+    return _modular_action_tree(f"PressKey::{mapped}", _press, aftercast_ms=aftercast_ms)
+
+
+def SkipCutscene(wait_ms: int = 1500, aftercast_ms: int = 250) -> BehaviorTree:
+    def _skip(_node: BehaviorTree.Node) -> BehaviorTree.NodeState:
+        from Py4GWCoreLib import Map
+
+        Map.SkipCinematic()
+        return BehaviorTree.NodeState.SUCCESS
+
+    children: list[BehaviorTree | BehaviorTree.Node] = []
+    if int(wait_ms or 0) > 0:
+        children.append(Wait(duration_ms=int(wait_ms), log=False))
+    children.append(_modular_action_tree("SkipCutscene", _skip, aftercast_ms=aftercast_ms))
+    return Sequence(name="SkipCutscene", children=children)
+
+
 def SendChatMessage(message: str, channel: str = "say", log: bool = False) -> BehaviorTree:
     return RoutinesBT.Player.SendChatMessage(
         message=message,
@@ -3415,6 +3463,7 @@ def SetPlayerStatus(
         verify=verify,
         timeout_ms=timeout_ms,
     )
+
 
 def ClickWindowFrame(frame_name: str, aftercast_ms: int = 250) -> BehaviorTree:
     return RoutinesBT.Player.ClickWindowFrame(

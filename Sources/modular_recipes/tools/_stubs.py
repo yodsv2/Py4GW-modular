@@ -337,7 +337,14 @@ def install() -> None:
     sys.modules["Py4GWCoreLib.enums_src.Multiboxing_enums"] = multibox_mod
 
     io_mod = types.ModuleType("Py4GWCoreLib.enums_src.IO_enums")
-    io_mod.Key = types.SimpleNamespace(H=72, Escape=27)
+    io_mod.Key = types.SimpleNamespace(
+        H=types.SimpleNamespace(value=72),
+        Escape=types.SimpleNamespace(value=27),
+        Enter=types.SimpleNamespace(value=13),
+        F1=types.SimpleNamespace(value=112),
+        F2=types.SimpleNamespace(value=113),
+        Space=types.SimpleNamespace(value=32),
+    )
     sys.modules["Py4GWCoreLib.enums_src.IO_enums"] = io_mod
 
     ui_mod = types.ModuleType("Py4GWCoreLib.enums_src.UI_enums")
