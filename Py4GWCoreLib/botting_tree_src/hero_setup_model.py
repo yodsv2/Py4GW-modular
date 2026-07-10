@@ -1,4 +1,4 @@
-"""Account-scoped hero team setup model for BottingTree party loading."""
+"""Account-scoped hero team setup model for ModularBot party loading."""
 from __future__ import annotations
 
 import json
@@ -102,8 +102,8 @@ def _project_root() -> str:
     return os.path.normpath(os.getcwd())
 
 
-def _botting_tree_settings_root() -> str:
-    return os.path.join(_project_root(), "Settings", "BottingTree")
+def _modular_bot_settings_root() -> str:
+    return os.path.join(_project_root(), "Settings", "ModularBot")
 
 
 def safe_account_key() -> str:
@@ -118,7 +118,7 @@ def safe_account_key() -> str:
 
 
 def hero_config_path(account_key: str | None = None) -> str:
-    configs_dir = os.path.join(_botting_tree_settings_root(), "configs")
+    configs_dir = os.path.join(_modular_bot_settings_root(), "configs")
     os.makedirs(configs_dir, exist_ok=True)
     return os.path.join(configs_dir, f"{account_key or safe_account_key()}.json")
 
@@ -155,10 +155,11 @@ def default_hero_config() -> dict[str, Any]:
 def normalize_hero_config(raw: dict[str, Any] | None) -> dict[str, Any]:
     source = raw if isinstance(raw, dict) else {}
     priority_source = source.get("priority", source.get("hero_priority", []))
-    return {
-        "version": 1,
-        "priority": normalize_priority(priority_source),
-    }
+    normalized = dict(source)
+    normalized["version"] = 1
+    normalized["priority"] = normalize_priority(priority_source)
+    normalized.pop("hero_priority", None)
+    return normalized
 
 
 def _load_hero_config_file(path: str) -> dict[str, Any] | None:
@@ -212,15 +213,20 @@ def get_hero_priority() -> list[int]:
     return normalize_priority(load_hero_priority())
 
 
-def get_team_by_priority(max_heroes: int, required_hero_ids: list[int] | None = None) -> list[int]:
-    slots = max(0, int(max_heroes) - 1)
-    if slots <= 0:
-        return []
+def get_hero_candidates_by_priority(required_hero_ids: list[int] | None = None) -> list[int]:
     required = [int(h) for h in (required_hero_ids or []) if int(h) > 0]
     team: list[int] = []
     for hero_id in required + get_hero_priority():
         if hero_id not in team:
             team.append(hero_id)
+    return team
+
+
+def get_team_by_priority(max_heroes: int, required_hero_ids: list[int] | None = None) -> list[int]:
+    slots = max(0, int(max_heroes) - 1)
+    if slots <= 0:
+        return []
+    team = get_hero_candidates_by_priority(required_hero_ids)
     return team[:slots]
 
 

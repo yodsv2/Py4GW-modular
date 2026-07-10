@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import ast
 import json
+import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
+from time import monotonic
+from time import sleep
 from typing import Any
 
 import PyImGui
@@ -25,6 +29,7 @@ MODULE_NAME = "Modular Tester"
 MODULE_ICON = "Textures/Module_Icons/Route Planner.png"
 MODULE_TAGS = ["Automation", "modular_bot"]
 STATE_PATH = Path(__file__).with_suffix(".run_state.json")
+STATE_LOCK_PATH = Path(f"{STATE_PATH}.lock")
 
 ACCENT = (0.30, 0.78, 0.86, 1.0)
 GOOD = (0.42, 0.88, 0.55, 1.0)
@@ -36,6 +41,10 @@ RUN_PENDING = "pending"
 RUN_SUCCESS = "success"
 RUN_FAILED = "failed"
 RUN_RUNNING = "running"
+RUN_FILTER_ALL = "all"
+RUN_FILTER_PENDING = "pending"
+RUN_FILTER_SUCCESS = "done"
+RUN_FILTER_FAILED = "failed"
 WINDOW_BG = (0.055, 0.070, 0.085, 0.985)
 PANEL_BG = (0.080, 0.100, 0.120, 0.965)
 PANEL_ALT_BG = (0.105, 0.125, 0.145, 0.965)
@@ -80,6 +89,7 @@ _status = ""
 _last_recipe = ""
 _recipe_run_states: dict[str, str] = {}
 _run_states_loaded = False
+_run_state_filter = RUN_FILTER_ALL
 _loop = False
 _debug_logging = False
 _draw_move_path = True
@@ -114,41 +124,117 @@ def _valid_run_state(value: object) -> str:
     return RUN_PENDING
 
 
-def _load_run_states() -> None:
-    global _run_states_loaded, _recipe_run_states
-    if _run_states_loaded:
-        return
-    _run_states_loaded = True
+def _read_run_state_recipes() -> dict[str, str]:
     if not STATE_PATH.exists():
-        return
-    try:
-        raw = json.loads(STATE_PATH.read_text(encoding="utf-8"))
-    except Exception as exc:
-        ConsoleLog(MODULE_NAME, f"Run state load failed: {exc}", Console.MessageType.Warning)
-        return
+        return {}
+    raw = json.loads(STATE_PATH.read_text(encoding="utf-8"))
     recipes = raw.get("recipes", {}) if isinstance(raw, dict) else {}
     if not isinstance(recipes, dict):
-        return
-    _recipe_run_states = {
+        return {}
+    return {
         str(recipe): state
         for recipe, raw_state in recipes.items()
         if (state := _valid_run_state(raw_state)) in {RUN_SUCCESS, RUN_FAILED}
     }
 
 
-def _save_run_states() -> None:
+def _atomic_write_run_state_recipes(recipes: dict[str, str]) -> None:
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = STATE_PATH.with_name(f"{STATE_PATH.name}.{os.getpid()}.tmp")
+    payload = {
+        "version": 1,
+        "recipes": {
+            recipe: state
+            for recipe, state in sorted(recipes.items())
+            if state in {RUN_SUCCESS, RUN_FAILED}
+        },
+    }
+    tmp_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    os.replace(str(tmp_path), str(STATE_PATH))
+
+
+def _acquire_run_state_lock(timeout_s: float = 1.5) -> int:
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    deadline = monotonic() + max(0.1, float(timeout_s))
+    while True:
+        try:
+            return os.open(str(STATE_LOCK_PATH), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                if time.time() - STATE_LOCK_PATH.stat().st_mtime > 10.0:
+                    STATE_LOCK_PATH.unlink()
+                    continue
+            except FileNotFoundError:
+                continue
+            except Exception:
+                pass
+            if monotonic() >= deadline:
+                raise TimeoutError(f"Timed out waiting for {STATE_LOCK_PATH.name}.")
+            sleep(0.05)
+
+
+def _release_run_state_lock(lock_fd: int) -> None:
     try:
-        payload = {
-            "version": 1,
-            "recipes": {
-                recipe: state
-                for recipe, state in sorted(_recipe_run_states.items())
-                if state in {RUN_SUCCESS, RUN_FAILED}
-            },
+        os.close(lock_fd)
+    finally:
+        try:
+            STATE_LOCK_PATH.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def _load_run_states(force: bool = False) -> None:
+    global _run_states_loaded, _recipe_run_states
+    if _run_states_loaded and not force:
+        return
+    _run_states_loaded = True
+    try:
+        final_states = _read_run_state_recipes()
+    except Exception as exc:
+        ConsoleLog(MODULE_NAME, f"Run state load failed: {exc}", Console.MessageType.Warning)
+        return
+    running_states = {
+        recipe: state
+        for recipe, state in _recipe_run_states.items()
+        if state == RUN_RUNNING
+    }
+    _recipe_run_states = {**final_states, **running_states}
+
+
+def _save_run_states(
+    updates: dict[str, str] | None = None,
+    removals: set[str] | None = None,
+    replace: bool = False,
+) -> None:
+    global _recipe_run_states
+    updates = updates or {}
+    removals = removals or set()
+    lock_fd = -1
+    try:
+        lock_fd = _acquire_run_state_lock()
+        recipes = {} if replace else _read_run_state_recipes()
+        for recipe in removals:
+            recipes.pop(str(recipe), None)
+        for recipe, state in updates.items():
+            state = _valid_run_state(state)
+            if state in {RUN_SUCCESS, RUN_FAILED}:
+                recipes[str(recipe)] = state
+        if replace:
+            for recipe, state in _recipe_run_states.items():
+                if state in {RUN_SUCCESS, RUN_FAILED}:
+                    recipes[str(recipe)] = state
+        _atomic_write_run_state_recipes(recipes)
+        running_states = {
+            recipe: state
+            for recipe, state in _recipe_run_states.items()
+            if state == RUN_RUNNING
         }
-        STATE_PATH.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+        _recipe_run_states = {**recipes, **running_states}
     except Exception as exc:
         ConsoleLog(MODULE_NAME, f"Run state save failed: {exc}", Console.MessageType.Warning)
+    finally:
+        if lock_fd >= 0:
+            _release_run_state_lock(lock_fd)
 
 
 def _debug(message: str) -> None:
@@ -156,10 +242,10 @@ def _debug(message: str) -> None:
         ConsoleLog(MODULE_NAME, message, Console.MessageType.Info)
 
 
-def _refresh_recipe_files() -> None:
+def _refresh_recipe_files(reload_run_states: bool = False) -> None:
     global _recipe_files, _recipe_tree, _recipe_titles, _recipe_summaries, _recipe_specs
     global _selected_recipe
-    _load_run_states()
+    _load_run_states(force=reload_run_states)
     recipes: list[str] = []
     titles: dict[str, str] = {}
     summaries: dict[str, RecipeSummary] = {}
@@ -197,12 +283,30 @@ def _build_recipe_tree(paths: list[str]) -> dict[str, object]:
     return root
 
 
+def _matches_run_state_filter(relative_path: str) -> bool:
+    state = _recipe_run_state(relative_path)
+    if _run_state_filter == RUN_FILTER_ALL:
+        return True
+    if _run_state_filter == RUN_FILTER_SUCCESS:
+        return state == RUN_SUCCESS
+    if _run_state_filter == RUN_FILTER_FAILED:
+        return state == RUN_FAILED
+    if _run_state_filter == RUN_FILTER_PENDING:
+        return state not in {RUN_SUCCESS, RUN_FAILED}
+    return True
+
+
+def _status_filtered_recipe_files() -> list[str]:
+    return [path for path in _recipe_files if _matches_run_state_filter(path)]
+
+
 def _visible_recipe_files() -> list[str]:
     needle = _filter_text.strip().lower()
+    candidates = _status_filtered_recipe_files()
     if not needle:
-        return list(_recipe_files)
+        return candidates
     return [
-        path for path in _recipe_files if needle in path.lower() or needle in (_recipe_titles.get(path) or "").lower()
+        path for path in candidates if needle in path.lower() or needle in (_recipe_titles.get(path) or "").lower()
     ]
 
 
@@ -213,7 +317,7 @@ def _selected_recipe_path() -> str:
 
 
 def _browser_node() -> dict[str, object]:
-    node = _recipe_tree
+    node = _build_recipe_tree(_status_filtered_recipe_files())
     for folder in _browser_path:
         dirs = node.get("dirs", {})
         if not isinstance(dirs, dict):
@@ -445,17 +549,17 @@ def _set_recipe_run_state(relative_path: str, state: str) -> None:
         return
     if state == RUN_PENDING:
         _recipe_run_states.pop(relative_path, None)
-        _save_run_states()
+        _save_run_states(removals={relative_path})
         return
     _recipe_run_states[relative_path] = state
     if state in {RUN_SUCCESS, RUN_FAILED}:
-        _save_run_states()
+        _save_run_states(updates={relative_path: state})
 
 
 def _reset_recipe_run_states() -> None:
     global _status
     _recipe_run_states.clear()
-    _save_run_states()
+    _save_run_states(replace=True)
     _status = "Recipe run states reset."
 
 
@@ -605,8 +709,28 @@ def _progress_fraction() -> float:
 
 def _kind_counts() -> dict[str, int]:
     counts: dict[str, int] = {}
-    for summary in _recipe_summaries.values():
+    for relative_path in _status_filtered_recipe_files():
+        summary = _recipe_summaries.get(relative_path)
+        if summary is None:
+            continue
         counts[summary.kind] = counts.get(summary.kind, 0) + 1
+    return counts
+
+
+def _run_state_counts() -> dict[str, int]:
+    counts = {
+        RUN_FILTER_PENDING: 0,
+        RUN_FILTER_SUCCESS: 0,
+        RUN_FILTER_FAILED: 0,
+    }
+    for relative_path in _recipe_files:
+        state = _recipe_run_state(relative_path)
+        if state == RUN_SUCCESS:
+            counts[RUN_FILTER_SUCCESS] += 1
+        elif state == RUN_FAILED:
+            counts[RUN_FILTER_FAILED] += 1
+        else:
+            counts[RUN_FILTER_PENDING] += 1
     return counts
 
 
@@ -696,6 +820,12 @@ def _quiet_button(label: str, width: float = 0.0) -> bool:
     clicked = PyImGui.button(label, width, 28)
     _pop_button_style()
     return clicked
+
+
+def _status_filter_button(label: str, value: str, width: float = 0.0) -> bool:
+    if _run_state_filter == value:
+        return _primary_button(label, width)
+    return _quiet_button(label, width)
 
 
 def _highlight_button(label: str, width: float = 0.0) -> bool:
@@ -815,14 +945,18 @@ def _draw_recipe_picker() -> None:
     if not _recipe_files:
         _refresh_recipe_files()
 
-    _draw_section_title("Recipes", f"{len(_recipe_files)} loaded")
+    visible_count = len(_status_filtered_recipe_files())
+    total_label = f"{visible_count}/{len(_recipe_files)} shown" if visible_count != len(_recipe_files) else f"{len(_recipe_files)} loaded"
+    _draw_section_title("Recipes", total_label)
     _draw_selection_controls()
+    PyImGui.spacing()
+    _draw_run_state_filters()
     PyImGui.spacing()
     PyImGui.set_next_item_width(max(120.0, PyImGui.get_content_region_avail()[0] - 82.0))
     _filter_text = PyImGui.input_text("##modular_tester_filter", _filter_text, 128)
     PyImGui.same_line(0, 6)
     if _quiet_button("Refresh", 74):
-        _refresh_recipe_files()
+        _refresh_recipe_files(reload_run_states=True)
     PyImGui.spacing()
     _draw_kind_strip()
     PyImGui.spacing()
@@ -830,6 +964,23 @@ def _draw_recipe_picker() -> None:
         _draw_filtered_recipes()
     else:
         _draw_button_browser()
+
+
+def _draw_run_state_filters() -> None:
+    global _run_state_filter
+    counts = _run_state_counts()
+    all_count = len(_recipe_files)
+    buttons = (
+        (RUN_FILTER_ALL, f"All {all_count}", 64.0),
+        (RUN_FILTER_PENDING, f"Pending {counts[RUN_FILTER_PENDING]}", 96.0),
+        (RUN_FILTER_SUCCESS, f"Done {counts[RUN_FILTER_SUCCESS]}", 78.0),
+        (RUN_FILTER_FAILED, f"Failed {counts[RUN_FILTER_FAILED]}", 86.0),
+    )
+    for index, (value, label, width) in enumerate(buttons):
+        if index > 0:
+            PyImGui.same_line(0, 6)
+        if _status_filter_button(f"{label}##run_state_filter_{value}", value, width):
+            _run_state_filter = value
 
 
 def _draw_selection_controls() -> None:

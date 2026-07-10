@@ -361,6 +361,7 @@ def install() -> None:
 
     hero_setup_model = types.ModuleType("Py4GWCoreLib.botting_tree_src.hero_setup_model")
     hero_setup_model.resolve_hero_ids = _resolve_hero_ids
+    hero_setup_model.get_hero_candidates_by_priority = _get_hero_candidates_by_priority
     hero_setup_model.get_team_by_priority = _get_team_by_priority
     sys.modules["Py4GWCoreLib.botting_tree_src.hero_setup_model"] = hero_setup_model
 
@@ -387,11 +388,16 @@ def _resolve_hero_ids(value: Any) -> list[int]:
     return []
 
 
-def _get_team_by_priority(max_heroes: int, required_hero_ids=None) -> list[int]:
-    slots = max(0, int(max_heroes) - 1)
+def _get_hero_candidates_by_priority(required_hero_ids=None) -> list[int]:
     team: list[int] = []
     for hero_id in list(required_hero_ids or []) + [24, 27, 21, 26, 25, 4, 37, 3]:
         hero_id = int(hero_id)
         if hero_id > 0 and hero_id not in team:
             team.append(hero_id)
+    return team
+
+
+def _get_team_by_priority(max_heroes: int, required_hero_ids=None) -> list[int]:
+    slots = max(0, int(max_heroes) - 1)
+    team = _get_hero_candidates_by_priority(required_hero_ids)
     return team[:slots]

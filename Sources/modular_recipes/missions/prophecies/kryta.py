@@ -290,10 +290,14 @@ def divinity_coast() -> BehaviorTree:
             BT.FlagAllHeroes(495, -5784),
             BT.Wait(duration_ms=25000),
             BT.MoveAndKill(
-                pos=[(379, -3050), (790, -6371), (706, -6549), (3, -6335), (495, -5784)],
+                pos=[(379, -3050), (790, -6371), (706, -6549), (3, -6335),(966, -5103)],
                 pause_on_combat=True,
             ),
             BT.UnflagAllHeroes(),
+            BT.MoveAndKill(
+                pos=[(495, -5784)],
+                pause_on_combat=True,
+            ),
             BT.Wait(duration_ms=2000),
             BT.MoveAndKill(
                 pos=[

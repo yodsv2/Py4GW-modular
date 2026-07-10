@@ -2818,22 +2818,22 @@ def LoadParty(
     log: bool = False,
 ) -> BehaviorTree:
     resolved_hero_ids = list(hero_ids or [])
+    target_hero_count = None
     if not resolved_hero_ids:
-        from Py4GWCoreLib.botting_tree_src.hero_setup_model import get_team_by_priority
+        from Py4GWCoreLib.botting_tree_src.hero_setup_model import get_hero_candidates_by_priority
         from Py4GWCoreLib.botting_tree_src.hero_setup_model import resolve_hero_ids
 
         required_hero_ids = resolve_hero_ids(required_hero)
         if required_hero and not required_hero_ids:
             raise ValueError(f"Unresolved required_hero {required_hero!r}.")
-        resolved_hero_ids = get_team_by_priority(
-            max_heroes=max(1, int(max_heroes)),
-            required_hero_ids=required_hero_ids,
-        )
+        target_hero_count = max(0, max(1, int(max_heroes)) - 1)
+        resolved_hero_ids = get_hero_candidates_by_priority(required_hero_ids=required_hero_ids)
 
     return RoutinesBT.Party.LoadParty(
         hero_ids=resolved_hero_ids,
         henchman_ids=list(henchman_ids or []),
         clear_existing=clear_existing,
+        target_hero_count=target_hero_count,
         log=log,
     )
 

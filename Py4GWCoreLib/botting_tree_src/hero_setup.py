@@ -1,4 +1,4 @@
-"""Public hero setup facade for BottingTree party loading and UI."""
+"""Public hero setup facade for ModularBot party loading and UI."""
 from __future__ import annotations
 
 from .hero_setup_model import (
@@ -7,6 +7,7 @@ from .hero_setup_model import (
     HERO_ID_TO_NAME as _HERO_ID_TO_NAME,
     default_hero_config,
     default_hero_config_path,
+    get_hero_candidates_by_priority,
     get_hero_priority,
     get_team_by_priority,
     hero_config_path,
@@ -50,6 +51,7 @@ __all__ = [
     "draw_priority_tab",
     "draw_setup_tab",
     "draw_team_configuration_window",
+    "get_hero_candidates_by_priority",
     "get_hero_priority",
     "get_team_by_priority",
     "hero_config_path",

@@ -602,7 +602,7 @@ class Party:
             Args: 
                 hero_id (int): The hero ID.
             """
-            Party.party_instance().AddHero(hero_id)
+            return Party.party_instance().AddHero(hero_id)
 
         @staticmethod
         def AddHeroByName(hero_name):

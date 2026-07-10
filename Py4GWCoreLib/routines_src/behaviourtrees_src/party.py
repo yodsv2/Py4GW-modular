@@ -290,6 +290,7 @@ class BTParty:
         hero_ids: list[int] | None = None,
         henchman_ids: list[int] | None = None,
         clear_existing: bool = False,
+        target_hero_count: int | None = None,
         require_outpost: bool = True,
         log: bool = False,
         aftercast_ms: int = 250,
@@ -308,6 +309,8 @@ class BTParty:
 
         hero_ids = [int(h) for h in (hero_ids or []) if int(h) > 0]
         henchman_ids = [int(h) for h in (henchman_ids or []) if int(h) > 0]
+        if target_hero_count is not None:
+            target_hero_count = max(0, int(target_hero_count))
 
         def _party_hero_id(hero) -> int:
             raw_hero_id = getattr(hero, "hero_id", 0)
@@ -332,23 +335,34 @@ class BTParty:
                 Party.Heroes.KickAllHeroes()
 
             existing_heroes = set()
-            for hero in Party.GetHeroes() or []:
-                hid = _party_hero_id(hero)
-                if hid > 0:
-                    existing_heroes.add(hid)
+            current_hero_count = 0
+            if not clear_existing:
+                for hero in Party.GetHeroes() or []:
+                    hid = _party_hero_id(hero)
+                    if hid > 0:
+                        existing_heroes.add(hid)
+                        current_hero_count += 1
 
             for hero_id in hero_ids:
+                if target_hero_count is not None and current_hero_count >= target_hero_count:
+                    break
                 if hero_id in existing_heroes:
                     continue
-                Party.Heroes.AddHero(hero_id)
+                add_result = Party.Heroes.AddHero(hero_id)
+                if add_result is False:
+                    continue
                 existing_heroes.add(hero_id)
+                if target_hero_count is None:
+                    current_hero_count += 1
 
             for henchman_id in henchman_ids:
                 Party.Henchmen.AddHenchman(henchman_id)
 
             _log(
                 "BTParty.LoadParty",
-                f"LoadParty dispatched heroes={hero_ids}, henchmen={henchman_ids}, clear_existing={clear_existing}",
+                "LoadParty dispatched "
+                f"heroes={hero_ids}, henchmen={henchman_ids}, clear_existing={clear_existing}, "
+                f"target_hero_count={target_hero_count}",
                 log=log,
             )
             return BehaviorTree.NodeState.SUCCESS

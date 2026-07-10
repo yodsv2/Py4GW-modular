@@ -149,8 +149,8 @@ def rihlon_refuge() -> BehaviorTree:
         name='Rilohn Refuge',
         children=[
             BT.Travel(target_map_id=425, leave_party=True),
-            BT.MoveAndKill(pos=(-15846, 11178), pause_on_combat=True),
             BT.LoadParty(max_heroes=8, required_hero=['Master of Whispers']),
+            BT.MoveAndKill(pos=(-15846, 11178), pause_on_combat=True),
             BT.Dialog(kind='npc', key='DEHJAH', dialog_ids=['0x81', '0x84']),
             BT.Wait(duration_ms=13200),
             BT.WaitForMapLoad(map_id=425, timeout_ms=10000),
@@ -168,7 +168,7 @@ def rihlon_refuge() -> BehaviorTree:
                 pause_on_combat=True,
             ),
             BT.Wait(duration_ms=32600),
-            BT.MoveAndKill(pos=(8341, 6225), pause_on_combat=True),
+            BT.MoveAndKill(pos=[(6074, 8031), (7042, 8992)], pause_on_combat=True),
             BT.WaitForMapLoad(map_id=427, timeout_ms=10000),
         ],
     )

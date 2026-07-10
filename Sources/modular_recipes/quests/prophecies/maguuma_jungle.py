@@ -5,45 +5,26 @@ from __future__ import annotations
 from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
 from Sources.ApoSource.ApoBottingLib import wrappers as BT
 
-
 def a_brothers_fury() -> BehaviorTree:
     return BT.Sequence(
         name="A Brother's Fury",
         children=[
-            BT.Travel(target_map_id=140, leave_party=True),
-            BT.Interact(kind='npc', pos=(4575, -9946)),
-            BT.Wait(duration_ms=500),
-            BT.Dialog(pos=(4575, -9946), dialog_ids=['0x805F03', '0x805F01'], interval_ms=500),
-            BT.Wait(duration_ms=500),
-            BT.MoveAndKill(pos=(4330, -10225), pause_on_combat=True),
-            BT.LoadParty(max_heroes=6),
-            BT.MoveAndExitMap(pos=(3150, -9450), target_map_id=41, move_tolerance=300),
-            BT.WaitForMapLoad(map_id=41, timeout_ms=10000),
-            BT.MoveAndKill(pos=[(1520, -8305), (1269, -6183)], pause_on_combat=True),
-            BT.Dialog(pos=(1520, -8305), dialog_ids=['0x805F04']),
-            BT.MoveAndKill(pos=(2817, -5953), pause_on_combat=True),
-            BT.Dialog(pos=(2817, -5953), dialog_ids=['0x805F04']),
-            BT.MoveAndKill(pos=[(638, -3198), (166, -2255), (0, -1750)], pause_on_combat=True),
-            BT.Dialog(pos=(-40, -1859), dialog_ids=['0x805F04']),
-            BT.MoveAndKill(
-                pos=[(-945.82, 1488.35), (-4336.98, 2136.03), (-6339.26, 3538.42)],
-                pause_on_combat=True,
-            ),
-            BT.Dialog(pos=(-6438, 3482), dialog_ids=['0x805F04']),
-            BT.MoveAndKill(
-                pos=[
-                    (-5413.57, 6429.74),
-                    (-7885.27, 7606.53),
-                    (-10742.3, 11073),
-                    (-13928.2, 9754.99),
-                    (-16480, 10136.5),
-                ],
-                pause_on_combat=True,
-            ),
-            BT.MoveAndExitMap(pos=(-16900, 9900), target_map_id=11, move_tolerance=300),
-            BT.WaitForMapLoad(map_id=11, timeout_ms=10000),
-            BT.MoveAndKill(pos=[(24314, -11233), (24042, -11911)], pause_on_combat=True),
-            BT.Dialog(pos=(24113, -12030), dialog_ids=['0x805F07']),
+            BT.Travel(target_map_id=140),
+            BT.Dialog(kind='npc', key='TRADER_VERSAI', dialog_ids=['0x805f03']),
+            BT.Dialog(kind='npc', key='TRADER_VERSAI', dialog_ids=['0x805f01']),
+            BT.LoadParty(max_heroes=5),
+            BT.MoveAndExitMap(pos=(3174, -9469), target_map_id=41, move_tolerance=300),
+            BT.Dialog(kind='npc', key='JUSTICIAR_THOMMIS', dialog_ids=['0x805f04']),
+            BT.Move(pos=[(3330, -5587), (1808, -5823)]),
+            BT.Dialog(kind='npc', key='HOUSE_RANGER_AMON', dialog_ids=['0x805f04']),
+            BT.Move(pos=[(-940, -1242), (752, -1693)]),
+            BT.Dialog(kind='npc', key='HOUSE_RANGER_LANALT', dialog_ids=['0x805f04']),
+            BT.Move(pos=[(-4359, 2107), (-6355, 3524)]),
+            BT.Dialog(kind='npc', key='HOUSE_RANGER_RIONEL', dialog_ids=['0x805f04']),
+            BT.Move(pos=[(-16051, 10441)]),
+            BT.MoveAndExitMap(pos=(-16857, 9993), target_map_id=11, move_tolerance=300),
+            BT.Move(pos=[(23963, -11803)]),
+            BT.Dialog(kind='npc', key='WITNESS_GISELLE', dialog_ids=['0x805f07']),
         ],
     )
 

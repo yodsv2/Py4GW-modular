@@ -174,7 +174,17 @@ def _assert_no_zero_duration_waits() -> None:
 def _assert_wrapper_helpers_compile() -> None:
     from Sources.ApoSource.ApoBottingLib import wrappers as BT
 
+    auto_party_tree = BT.LoadParty(max_heroes=8, required_hero=["Koss"])
+    assert auto_party_tree.root.kwargs["target_hero_count"] == 7
+    assert len(auto_party_tree.root.kwargs["hero_ids"]) > 7
+
+    exact_party_tree = BT.LoadParty(hero_ids=[6])
+    assert exact_party_tree.root.kwargs["hero_ids"] == [6]
+    assert exact_party_tree.root.kwargs["target_hero_count"] is None
+
     helper_trees = [
+        auto_party_tree,
+        exact_party_tree,
         BT.TargetNearest(0, 0),
         BT.TargetNearestGadget(0, 0),
         BT.TargetAgentByModelID(123),
