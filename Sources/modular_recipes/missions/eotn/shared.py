@@ -1,4 +1,4 @@
-"""Missions Eotn Depths Of Tyria BehaviorTree recipes."""
+"""Missions Eotn Shared BehaviorTree recipes."""
 
 from __future__ import annotations
 
@@ -81,9 +81,7 @@ def destructions_depths() -> BehaviorTree:
             BT.Dialog(kind='npc', key='G_O_L_E_M_2_0_MELEE', dialog_ids=['0x88']),
             BT.Wait(duration_ms=100),
             BT.MoveAndKill(pos=[(-1805, 3022), (0, 4120), (1958, 3226)], pause_on_combat=True),
-            BT.MoveAndKill(
-                pos=[(1269, 2013), (-820, 778), (15, 153), (-167, 684)], pause_on_combat=True
-            ),
+            BT.MoveAndKill(pos=[(1269, 2013), (-820, 778), (15, 153), (-167, 684)], pause_on_combat=True),
             BT.WaitForMapLoad(map_id=652, timeout_ms=10000),
         ],
     )

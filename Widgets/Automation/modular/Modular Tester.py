@@ -97,6 +97,7 @@ _draw_move_path_labels = False
 _draw_move_path_thickness = 4.0
 _draw_move_waypoint_radius = 15.0
 _draw_move_current_waypoint_radius = 20.0
+_start_source_index_by_recipe: dict[str, int] = {}
 
 
 class _TesterMovePathDrawer(BottingTreeUIMovePathMixin):
@@ -484,26 +485,36 @@ def _mark_source_step(step: SourceStep, total: int) -> BehaviorTree.Node:
     )
 
 
-def _instrument_recipe_tree(tree: BehaviorTree, source_steps: tuple[SourceStep, ...]) -> BehaviorTree:
+def _instrument_recipe_tree(
+    tree: BehaviorTree,
+    source_steps: tuple[SourceStep, ...],
+    start_source_index: int = 0,
+) -> BehaviorTree:
     if not source_steps or not isinstance(tree.root, BehaviorTree.SequenceNode):
         return tree
     children = list(tree.root.get_children())
     if not children:
         return tree
+    start_index = max(0, int(start_source_index))
+    start_index = min(start_index, len(children) - 1)
     wrapped_children: list[BehaviorTree.Node] = []
     total = len(source_steps)
-    for index, child in enumerate(children):
+    for index, child in enumerate(children[start_index:], start=start_index):
         if index < total:
             wrapped_children.append(_mark_source_step(source_steps[index], total))
         wrapped_children.append(child)
     return BehaviorTree(BehaviorTree.SequenceNode(name=tree.root.name, children=wrapped_children))
 
 
-def _instrumented_recipe_factory(spec: RecipeSpec, relative_path: str):
+def _instrumented_recipe_factory(spec: RecipeSpec, relative_path: str, start_source_index: int = 0):
     base_factory = get_recipe_factory(spec)
 
     def _factory() -> BehaviorTree:
-        return _instrument_recipe_tree(BehaviorTree.resolve_tree(base_factory), _source_steps_for_recipe(relative_path))
+        return _instrument_recipe_tree(
+            BehaviorTree.resolve_tree(base_factory),
+            _source_steps_for_recipe(relative_path),
+            start_source_index=start_source_index,
+        )
 
     return _factory
 
@@ -542,6 +553,27 @@ def _draw_move_path_overlay() -> None:
 
 def _recipe_run_state(relative_path: str) -> str:
     return _recipe_run_states.get(relative_path, RUN_PENDING)
+
+
+def _clamp_source_start_index(relative_path: str, index: int) -> int:
+    source_steps = _source_steps_for_recipe(relative_path)
+    if not source_steps:
+        return 0
+    return max(0, min(int(index), len(source_steps) - 1))
+
+
+def _selected_source_start_index(relative_path: str) -> int:
+    return _clamp_source_start_index(relative_path, _start_source_index_by_recipe.get(relative_path, 0))
+
+
+def _set_selected_source_start_index(relative_path: str, index: int) -> None:
+    if not relative_path:
+        return
+    _start_source_index_by_recipe[relative_path] = _clamp_source_start_index(relative_path, index)
+
+
+def _source_step_label(step: SourceStep) -> str:
+    return f"{step.index + 1:02d}. {step.call} ({Path(step.file).name}:{step.line})"
 
 
 def _set_recipe_run_state(relative_path: str, state: str) -> None:
@@ -597,7 +629,7 @@ def _tick_runner() -> None:
         _mark_runner_finished(False, planner_status)
 
 
-def _start_selected_recipe() -> None:
+def _start_selected_recipe(start_source_index: int = 0) -> None:
     global _runner, _status, _last_recipe, _planner_step_total, _last_active_step_name
     relative_path = _selected_recipe_path()
     if not relative_path:
@@ -613,7 +645,8 @@ def _start_selected_recipe() -> None:
         spec = _selected_spec(relative_path)
         if spec is None:
             raise ValueError(f"Unknown recipe {relative_path}.")
-        builder = _instrumented_recipe_factory(spec, relative_path)
+        start_source_index = _clamp_source_start_index(relative_path, start_source_index)
+        builder = _instrumented_recipe_factory(spec, relative_path, start_source_index=start_source_index)
         selected_steps = [(f"01. {spec.title or spec.factory}", builder)]
         _planner_step_total = len(selected_steps)
         _last_active_step_name = ""
@@ -633,7 +666,11 @@ def _start_selected_recipe() -> None:
         _runner = runner
         _last_recipe = relative_path
         _set_recipe_run_state(relative_path, RUN_RUNNING)
-        _status = f"Started {relative_path}."
+        source_steps = _source_steps_for_recipe(relative_path)
+        if start_source_index > 0 and start_source_index < len(source_steps):
+            _status = f"Started {relative_path} from step {start_source_index + 1}/{len(source_steps)}."
+        else:
+            _status = f"Started {relative_path}."
     except Exception as exc:
         _runner = None
         _set_recipe_run_state(relative_path, RUN_FAILED)
@@ -1207,10 +1244,25 @@ def _target_issue_available() -> bool:
     return _runner is not None and bool(str(_runner.blackboard.get("modular_target_error", "") or ""))
 
 
+def _current_resume_source_step() -> SourceStep | None:
+    selected = _selected_recipe_path()
+    if not selected or selected != _last_recipe:
+        return None
+    step = _current_source_step_from_blackboard()
+    if step is None or step.index < 0:
+        return None
+    if step.index >= len(_source_steps_for_recipe(selected)):
+        return None
+    return step
+
+
 def _draw_runtime_controls() -> None:
     selected = _selected_recipe_path()
     running = _runner_is_running()
     paused = _runner_is_paused()
+    source_steps = _source_steps_for_recipe(selected) if selected else ()
+    selected_start_index = _selected_source_start_index(selected) if selected else 0
+    resume_step = _current_resume_source_step()
     PyImGui.begin_disabled(_runner is None)
     if _highlight_button("Copy context", 112):
         _copy_runtime_context()
@@ -1226,6 +1278,17 @@ def _draw_runtime_controls() -> None:
         _start_selected_recipe()
     PyImGui.end_disabled()
     PyImGui.same_line(0, 6)
+    PyImGui.begin_disabled(not selected or running or not source_steps)
+    if _primary_button("Run from step", 120):
+        _start_selected_recipe(selected_start_index)
+    PyImGui.end_disabled()
+    PyImGui.same_line(0, 6)
+    PyImGui.begin_disabled(running or resume_step is None)
+    if _highlight_button("Run from current", 132) and resume_step is not None:
+        _set_selected_source_start_index(selected, resume_step.index)
+        _start_selected_recipe(resume_step.index)
+    PyImGui.end_disabled()
+    PyImGui.spacing()
     PyImGui.begin_disabled(not running)
     if _quiet_button("Pause", 78):
         _pause_runner()
@@ -1453,6 +1516,23 @@ def _draw_recipe_detail() -> None:
         _draw_detail_row("Raw legacy actions", str(spec.raw_steps))
         _draw_detail_row("Source steps", str(len(_source_steps_for_recipe(selected))))
         PyImGui.end_table()
+    _draw_source_start_selector(selected)
+
+
+def _draw_source_start_selector(selected: str) -> None:
+    source_steps = _source_steps_for_recipe(selected)
+    if not source_steps:
+        return
+    PyImGui.spacing()
+    labels = [_source_step_label(step) for step in source_steps]
+    current_index = _selected_source_start_index(selected)
+    next_index = PyImGui.combo("Start step##modular_tester_start_source", current_index, labels)
+    if next_index != current_index:
+        _set_selected_source_start_index(selected, next_index)
+        current_index = _selected_source_start_index(selected)
+    step = source_steps[current_index]
+    _draw_label_value("Start call", step.call, ACCENT)
+    PyImGui.text_wrapped(step.source)
 
 
 def _draw_detail_row(label: str, value: str) -> None:

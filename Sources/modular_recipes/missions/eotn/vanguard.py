@@ -1,4 +1,4 @@
-"""Missions Eotn Charr Homelands BehaviorTree recipes."""
+"""Missions Eotn Vanguard BehaviorTree recipes."""
 
 from __future__ import annotations
 
@@ -41,9 +41,7 @@ def assault_on_the_stronghold() -> BehaviorTree:
             BT.Wait(duration_ms=42800),
             BT.MoveAndKill(pos=(1295, 10590), pause_on_combat=True),
             BT.Wait(duration_ms=21500),
-            BT.MoveAndKill(
-                pos=[(-2426, 11130), (-3164, 9874), (-4130, 10219)], pause_on_combat=True
-            ),
+            BT.MoveAndKill(pos=[(-2426, 11130), (-3164, 9874), (-4130, 10219)], pause_on_combat=True),
             BT.Wait(duration_ms=600),
             BT.MoveAndKill(
                 pos=[(-5225, 10896), (-6926, 14394), (-7230, 11892), (-8232, 10143), (-5958, 8958)],
@@ -94,9 +92,7 @@ def warband_of_brothers() -> BehaviorTree:
             BT.MoveAndKill(pos=(17203, -6240), pause_on_combat=True),
             BT.OptionalInteractItemByModel(model_id=25413, point=None, max_dist=4500),
             BT.Interact(kind='gadget', key='CHARR_PRISON_LOCK', pos=(17159, -6461)),
-            BT.MoveAndKill(
-                pos=[(19008, -10634), (18661, -12008), (18073, -14440)], pause_on_combat=True
-            ),
+            BT.MoveAndKill(pos=[(19008, -10634), (18661, -12008), (18073, -14440)], pause_on_combat=True),
             BT.OptionalInteractItemByModel(model_id=25413, point=None, max_dist=4500),
             BT.MoveAndKill(pos=(18077, -14657), pause_on_combat=True),
             BT.Interact(kind='gadget', key='CHARR_PRISON_LOCK', pos=(18147, -14974)),

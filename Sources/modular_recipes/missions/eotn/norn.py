@@ -1,4 +1,4 @@
-"""Missions Eotn Far Shiverpeaks BehaviorTree recipes."""
+"""Missions Eotn Norn BehaviorTree recipes."""
 
 from __future__ import annotations
 
@@ -60,6 +60,43 @@ def curse_of_the_nornbear() -> BehaviorTree:
     )
 
 
+def a_gate_too_far() -> BehaviorTree:
+    return BT.Sequence(
+        name='A Gate too Far',
+        children=[
+            BT.Travel(target_map_id=645, leave_party=True),
+            BT.LoadParty(max_heroes=8),
+            BT.Dialog(kind='npc', key='OLAF_OLAFSON', dialog_ids=['0x81', '0x86']),
+            BT.WaitForMapLoad(map_id=655, timeout_ms=10000),
+            BT.MoveAndKill(pos=[(-6251, 6310), (-4971, 7878), (-6273, 6457)], pause_on_combat=True),
+            BT.Wait(duration_ms=12000),
+            BT.MoveAndKill(pos=[(-7593, 7340), (-6445, 6617)], pause_on_combat=True),
+            BT.Wait(duration_ms=12000),
+            BT.MoveAndKill(pos=[(-8254, 5089), (-6316, 6433)], pause_on_combat=True),
+            BT.Wait(duration_ms=12000),
+            BT.MoveAndKill(pos=[(-5259, 3959), (-6269, 6352)], pause_on_combat=True),
+            BT.Wait(duration_ms=12000),
+            BT.Interact(kind='npc', key='SHRINE_OF_THE_RAVEN_SPIRIT'),
+            BT.Wait(duration_ms=3000),
+            BT.TakeMissionSkill(slot=6, log=True),
+            BT.CastSkillSlot(6, target_agent_id=0, aftercast_delay_ms=2000, log=True),
+            BT.MoveAndKill(pos=[(-6354, 1149), (-18283, 9595)], pause_on_combat=True),
+            BT.MoveAndExitMap(pos=(-19801, 9620), target_map_id=656, move_tolerance=300),
+            BT.Interact(kind='npc', key='OLAF_OLAFSON'),
+            BT.TakeMissionSkill(slot=6, log=True),
+            BT.MoveAndKill(
+                pos=[(15085, 9549), (11311, 11893), (8222, 12208), (6034, 16187), (4236, 17188)],
+                pause_on_combat=True,
+            ),
+            BT.MoveAndExitMap(pos=(3416, 17728), target_map_id=657, move_tolerance=300),
+            BT.Interact(kind='npc', key='OLAF_OLAFSON'),
+            BT.TakeMissionSkill(slot=6, log=True),
+            BT.MoveAndKill(pos=[(4897, 13358), (6625, 8526), (7209, 6096), (7643, 2977)], pause_on_combat=True),
+            BT.WaitForMapLoad(map_id=645, timeout_ms=10000),
+        ],
+    )
+
+
 ROUTE_POINTS_BY_RECIPE: dict[str, tuple[tuple[float, float], ...]] = {
     'blood_washes_blood': (
         (9852.0, -21129.0),
@@ -90,6 +127,30 @@ ROUTE_POINTS_BY_RECIPE: dict[str, tuple[tuple[float, float], ...]] = {
         (3831.0, 5747.0),
         (4765.0, 6711.0),
     ),
+    'a_gate_too_far': (
+        (-15236.0, 8653.0),
+        (-6251.0, 6310.0),
+        (-4971.0, 7878.0),
+        (-6273.0, 6457.0),
+        (-7593.0, 7340.0),
+        (-6445.0, 6617.0),
+        (-8254.0, 5089.0),
+        (-6316.0, 6433.0),
+        (-5259.0, 3959.0),
+        (-6269.0, 6352.0),
+        (-6354.0, 1149.0),
+        (-18283.0, 9595.0),
+        (-19801.0, 9620.0),
+        (15085.0, 9549.0),
+        (11311.0, 11893.0),
+        (8222.0, 12208.0),
+        (6034.0, 16187.0),
+        (4236.0, 17188.0),
+        (3416.0, 17728.0),
+        (4897.0, 13358.0),
+        (6625.0, 8526.0),
+        (7209.0, 6096.0),
+    ),
 }
 
 
@@ -109,5 +170,13 @@ RECIPES: tuple[dict[str, object], ...] = (
         'factory': 'curse_of_the_nornbear',
         'source_steps': 18,
         'raw_steps': 18,
+    },
+    {
+        'kind': 'mission',
+        'key': 'eotn/a_gate_too_far',
+        'title': 'A Gate too Far',
+        'factory': 'a_gate_too_far',
+        'source_steps': 22,
+        'raw_steps': 22,
     },
 )
