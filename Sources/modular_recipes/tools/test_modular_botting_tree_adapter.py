@@ -17,6 +17,10 @@ def main() -> int:
     from Sources.modular_recipes.catalog import planner_steps_for_specs
     from Sources.modular_recipes.prebuilt.modular_eotn import build_eotn_campaign_specs
     from Sources.modular_recipes.prebuilt.modular_eotn import create_eotn_campaign_bot
+    from Sources.modular_recipes.prebuilt.modular_nightfall import build_nightfall_campaign_specs
+    from Sources.modular_recipes.prebuilt.modular_nightfall import create_nightfall_campaign_bot
+    from Sources.modular_recipes.prebuilt.modular_prophecies import build_prophecies_campaign_specs
+    from Sources.modular_recipes.prebuilt.modular_prophecies import create_prophecies_campaign_bot
 
     specs = build_eotn_campaign_specs()
     assert specs
@@ -31,6 +35,16 @@ def main() -> int:
     loop_bot = create_eotn_campaign_bot(options=type("Options", (), {"start_phase_index": 1, "loop": True})())
     assert len(loop_bot.steps) == len(specs) - 1
     assert loop_bot.repeat is True
+
+    for build_specs, create_bot in (
+        (build_nightfall_campaign_specs, create_nightfall_campaign_bot),
+        (build_eotn_campaign_specs, create_eotn_campaign_bot),
+        (build_prophecies_campaign_specs, create_prophecies_campaign_bot),
+    ):
+        campaign_specs = build_specs()
+        for start_index in (0, len(campaign_specs) // 2, len(campaign_specs) - 1):
+            campaign_bot = create_bot(options=type("Options", (), {"start_phase_index": start_index, "loop": False})())
+            assert len(campaign_bot.steps) == len(campaign_specs) - start_index
     print("modular_botting_tree_adapter: ok")
     return 0
 

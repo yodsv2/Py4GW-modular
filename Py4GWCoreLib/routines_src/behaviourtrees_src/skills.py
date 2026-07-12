@@ -242,6 +242,79 @@ class BTSkills:
         
         tree = BehaviorTree.ActionNode(name="LoadHeroSkillbar", action_fn=lambda: _load_hero_skillbar(hero_index, template), aftercast_ms=250)
         return BehaviorTree(tree)
+
+    @staticmethod
+    def TakeMissionSkill(slot: int = 6, timeout_ms: int = 2500, poll_ms: int = 150, log: bool = False) -> BehaviorTree:
+        """
+        Build a tree that places the currently offered temporary mission skill into a skillbar slot.
+
+        Meta:
+          Expose: true
+          Audience: intermediate
+          Display: Take Mission Skill
+          Purpose: Accept a temporary mission skill offered by the current NPC dialog.
+          UserDescription: Use this after an NPC dialog offers a temporary mission skill and the mission route needs it placed on the skillbar.
+          Notes: Slots are one-based for recipes and converted to the native zero-based hotkey index. The node waits for the chosen slot to change so missing offers fail visibly.
+        """
+        state = {
+            "slot": 6,
+            "before_skill_id": 0,
+        }
+
+        def _request_mission_skill(node: BehaviorTree.Node) -> BehaviorTree.NodeState:
+            from ...Skill import clamp_skill_slot
+            from ...Skill import is_interact_place_skill_available
+            from ...Skill import order_interact_set_hotkey
+
+            resolved_slot = clamp_skill_slot(slot)
+            state["slot"] = resolved_slot
+            state["before_skill_id"] = int(GLOBAL_CACHE.SkillBar.GetSkillIDBySlot(resolved_slot) or 0)
+
+            if not is_interact_place_skill_available():
+                _fail_log("TakeMissionSkill", "Mission skill placement function is unavailable.")
+                return BehaviorTree.NodeState.FAILURE
+
+            if not order_interact_set_hotkey(resolved_slot - 1):
+                _fail_log("TakeMissionSkill", f"Failed to request mission skill placement for slot {resolved_slot}.")
+                return BehaviorTree.NodeState.FAILURE
+
+            _log("TakeMissionSkill", f"Requested mission skill placement in slot {resolved_slot}.", log=log)
+            return BehaviorTree.NodeState.SUCCESS
+
+        def _wait_for_slot_change(node: BehaviorTree.Node) -> BehaviorTree.NodeState:
+            from ...Skill import order_interact_set_hotkey
+
+            resolved_slot = int(state.get("slot", 6) or 6)
+            before_skill_id = int(state.get("before_skill_id", 0) or 0)
+            current_skill_id = int(GLOBAL_CACHE.SkillBar.GetSkillIDBySlot(resolved_slot) or 0)
+            if current_skill_id != 0 and current_skill_id != before_skill_id:
+                _log(
+                    "TakeMissionSkill",
+                    f"Mission skill placed in slot {resolved_slot}: {before_skill_id} -> {current_skill_id}.",
+                    log=log,
+                )
+                return BehaviorTree.NodeState.SUCCESS
+            order_interact_set_hotkey(resolved_slot - 1)
+            return BehaviorTree.NodeState.RUNNING
+
+        return BehaviorTree(
+            BehaviorTree.SequenceNode(
+                name="TakeMissionSkill",
+                children=[
+                    BehaviorTree.ActionNode(
+                        name="RequestMissionSkill",
+                        action_fn=_request_mission_skill,
+                        aftercast_ms=250,
+                    ),
+                    BehaviorTree.WaitUntilNode(
+                        name="WaitForMissionSkillSlot",
+                        condition_fn=_wait_for_slot_change,
+                        throttle_interval_ms=max(50, int(poll_ms)),
+                        timeout_ms=max(250, int(timeout_ms)),
+                    ),
+                ],
+            )
+        )
     
     @staticmethod
     def CastSkillID (skill_id:int,target_agent_id:int =0, extra_condition=True, aftercast_delay=0,  log=False):

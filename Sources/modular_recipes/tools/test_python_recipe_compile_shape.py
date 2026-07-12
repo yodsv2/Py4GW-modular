@@ -206,9 +206,19 @@ def _assert_wrapper_helpers_compile() -> None:
         BT.Dialog(["0x84"], kind="npc", key="BROTHER_MHENLO"),
         BT.Dialog(["0x84"], kind="npc", model_id=123),
         BT.Dialog(["0x84"], pos=(0, 0)),
+        BT.Anchor("after_first_checkpoint"),
+        BT.TakeMissionSkill(),
+        BT.CastSkillSlot(6),
+        BT.PatrolUntilEnemyKilled("HARBINGER_OF_TWILIGHT", [(0, 0)], kills_required=2),
     ]
     for tree in helper_trees:
         assert tree.__class__.__name__ == "BehaviorTree"
+
+    anchor_tree = BT.Anchor("after_first_checkpoint")
+    assert anchor_tree.root.name == "Anchor::after_first_checkpoint"
+    assert anchor_tree.root.action_fn(anchor_tree.root).value == "success"
+    assert anchor_tree.root.blackboard["modular_anchor_name"] == "after_first_checkpoint"
+    assert anchor_tree.root.blackboard["party_wipe_recovery_anchor_name"] == "after_first_checkpoint"
 
 
 def main() -> int:

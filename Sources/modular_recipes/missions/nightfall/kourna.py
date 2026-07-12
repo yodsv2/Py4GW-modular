@@ -123,8 +123,22 @@ def nundu_bay() -> BehaviorTree:
             BT.Wait(duration_ms=7000),
             BT.WaitForMapLoad(map_id=477, timeout_ms=10000),
             BT.MoveAndKill(pos=(8356, 12851), pause_on_combat=True),
-            BT.Wait(duration_ms=60000),
+            BT.Wait(duration_ms=30000),
+            BT.MoveAndKill(pos=(8356, 12851), pause_on_combat=True),
+            BT.Wait(duration_ms=30000),
             BT.Dialog(kind='npc', key='ELDER_JONAH', dialog_ids=['0x1']),
+            BT.TakeMissionSkill(slot=6, log=True),
+            BT.PatrolUntilEnemyKilled(
+                target_key='HARBINGER_OF_TWILIGHT',
+                patrol_points=[
+                    (8350, 12566), (9094, 10539), (7096, 11228), (6400, 13211), (8453, 12501)
+                ],
+                skill_slot=6,
+                max_dist=6500,
+                kills_required=2,
+                timeout_ms=600000,
+                log=True,
+            ),
             BT.MoveAndKill(
                 pos=[
                     (4623, 12080),
@@ -186,6 +200,9 @@ def venta_cemetery() -> BehaviorTree:
             BT.WaitForMapLoad(map_id=421, timeout_ms=10000),
             BT.MoveAndKill(pos=(21776, 13123), pause_on_combat=True),
             BT.Dialog(kind='npc', key='ROJIS', dialog_ids=['0x84']),
+            BT.TakeMissionSkill(slot=6, log=True),
+            BT.MoveAndKill(pos=[(21163, 12486)], pause_on_combat=True),
+            BT.CastSkillSlot(6, target_agent_id=0, aftercast_delay_ms=2000, log=True),
             BT.MoveAndKill(pos=[(21167, 12587), (19473, 5603)], pause_on_combat=True),
             BT.MoveAndKill(pos=[(17641, -633), (17402, -2474)], pause_on_combat=True),
             BT.MoveAndKill(

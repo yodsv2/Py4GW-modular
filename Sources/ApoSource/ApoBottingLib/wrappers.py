@@ -168,6 +168,30 @@ def Succeeder(name: str = "Succeeder") -> BehaviorTree:
     return BehaviorTree(BehaviorTree.SucceederNode(name=name))
 
 
+def Anchor(name: str) -> BehaviorTree:
+    """
+    Mark a named modular recovery anchor on the behavior-tree blackboard.
+
+    This is intentionally metadata-only for now: it records the last reached
+    anchor without changing `current_step_name`, so existing top-level party
+    wipe recovery keeps its current behavior.
+    """
+    anchor_name = str(name or "").strip() or "anchor"
+
+    def _mark_anchor(node: BehaviorTree.Node) -> BehaviorTree.NodeState:
+        node.blackboard["modular_anchor_name"] = anchor_name
+        node.blackboard["party_wipe_recovery_anchor_name"] = anchor_name
+        return BehaviorTree.NodeState.SUCCESS
+
+    return BehaviorTree(
+        BehaviorTree.ActionNode(
+            name=f"Anchor::{anchor_name}",
+            action_fn=_mark_anchor,
+            aftercast_ms=0,
+        )
+    )
+
+
 def Failer(name: str = "Failer") -> BehaviorTree:
     return BehaviorTree(BehaviorTree.FailerNode(name=name))
 
@@ -1983,6 +2007,299 @@ def VanquishNode(
     )
 
 
+def PatrolUntilEnemyKilled(
+    target_key: str,
+    patrol_points: PointOrPath,
+    *,
+    skill_slot: int = 0,
+    max_dist: float = 6000.0,
+    waypoint_tolerance: float = 350.0,
+    target_distance: float = Range.Spellcast.value,
+    move_interval_ms: int = 750,
+    interact_interval_ms: int = 750,
+    skill_interval_ms: int = 1500,
+    missing_target_grace_ms: int = 3000,
+    kills_required: int = 1,
+    timeout_ms: int = 120000,
+    log: bool = False,
+) -> BehaviorTree:
+    from Py4GWCoreLib.modular.domain.target_registry import get_named_agent_target
+
+    target_key = str(target_key or "").strip()
+    definition = get_named_agent_target("enemy", target_key)
+    required_kills = max(1, int(kills_required))
+    points: list[tuple[float, float]] = []
+    for point in PointPath.as_path(patrol_points):
+        if hasattr(point, "x") and hasattr(point, "y"):
+            points.append((float(point.x), float(point.y)))
+        elif isinstance(point, (list, tuple)) and len(point) >= 2:
+            points.append((float(point[0]), float(point[1])))
+    state = {
+        "started_ms": None,
+        "point_index": 0,
+        "found_target": False,
+        "engaged_target": False,
+        "target_id": 0,
+        "kills_completed": 0,
+        "handled_target_ids": set(),
+        "last_move_ms": 0,
+        "last_interact_ms": 0,
+        "last_skill_ms": 0,
+        "lost_target_since_ms": None,
+        "last_status": "",
+    }
+
+    def _set_status(node: BehaviorTree.Node, status: str, target_id: int = 0) -> None:
+        state["last_status"] = status
+        node.blackboard["patrol_enemy_target_key"] = target_key
+        node.blackboard["patrol_enemy_status"] = status
+        node.blackboard["patrol_enemy_target_id"] = int(target_id)
+        node.blackboard["patrol_enemy_point_index"] = int(state["point_index"])
+        node.blackboard["patrol_enemy_point_count"] = len(points)
+        node.blackboard["patrol_enemy_kills_completed"] = int(state["kills_completed"])
+        node.blackboard["patrol_enemy_kills_required"] = required_kills
+
+    def _target_is_alive(agent_id: int) -> bool:
+        if agent_id <= 0:
+            return False
+        try:
+            from Py4GWCoreLib import Agent
+
+            return bool(Agent.IsValid(agent_id) and Agent.IsAlive(agent_id) and not Agent.IsDead(agent_id))
+        except Exception:
+            return False
+
+    def _target_is_confirmed_dead(agent_id: int) -> bool:
+        if agent_id <= 0:
+            return False
+        try:
+            from Py4GWCoreLib import Agent
+
+            return bool(Agent.IsValid(agent_id) and Agent.IsDead(agent_id))
+        except Exception:
+            return False
+
+    def _current_target_id() -> int:
+        existing_target_id = int(state.get("target_id", 0) or 0)
+        handled_target_ids = state["handled_target_ids"]
+        if not isinstance(handled_target_ids, set):
+            handled_target_ids = set()
+            state["handled_target_ids"] = handled_target_ids
+        if existing_target_id in handled_target_ids:
+            state["target_id"] = 0
+            existing_target_id = 0
+        if _target_is_alive(existing_target_id):
+            return existing_target_id
+        if bool(state["found_target"]) and existing_target_id > 0:
+            return 0
+        agent_id = _find_alive_target_id() if definition is not None else 0
+        if agent_id > 0:
+            state["target_id"] = int(agent_id)
+            state["found_target"] = True
+            state["engaged_target"] = False
+            state["lost_target_since_ms"] = None
+        return int(agent_id)
+
+    def _find_alive_target_id() -> int:
+        from Py4GWCoreLib import AgentArray
+        from Py4GWCoreLib import Player
+
+        if definition is None or not _modular_definition_has_runtime_identity(definition):
+            return 0
+
+        handled_target_ids = state["handled_target_ids"]
+        if not isinstance(handled_target_ids, set):
+            handled_target_ids = set()
+            state["handled_target_ids"] = handled_target_ids
+        px, py = Player.GetXY()
+        agents = AgentArray.Filter.ByDistance(_modular_agents_for_kind("enemy"), (px, py), float(max_dist))
+        agents = AgentArray.Sort.ByDistance(agents, (px, py))
+        for agent_id in agents:
+            candidate_id = int(agent_id)
+            if candidate_id in handled_target_ids:
+                continue
+            if not _target_is_alive(candidate_id):
+                continue
+            if _modular_agent_matches_definition(candidate_id, definition):
+                return candidate_id
+        return 0
+
+    def _record_target_handled(node: BehaviorTree.Node, target_id: int) -> bool:
+        handled_target_ids = state["handled_target_ids"]
+        if not isinstance(handled_target_ids, set):
+            handled_target_ids = set()
+            state["handled_target_ids"] = handled_target_ids
+        if target_id > 0:
+            handled_target_ids.add(int(target_id))
+        state["kills_completed"] = int(state["kills_completed"]) + 1
+        state["found_target"] = False
+        state["engaged_target"] = False
+        state["target_id"] = 0
+        state["lost_target_since_ms"] = None
+        state["last_interact_ms"] = 0
+        state["last_skill_ms"] = 0
+        _set_status(node, "target_killed", target_id)
+        return int(state["kills_completed"]) >= required_kills
+
+    def _patrol(node: BehaviorTree.Node) -> BehaviorTree.NodeState:
+        from Py4GWCoreLib import Agent
+        from Py4GWCoreLib import Player
+        from Py4GWCoreLib.GlobalCache import GLOBAL_CACHE
+        from Py4GWCoreLib.Py4GWcorelib import Console
+        from Py4GWCoreLib.Py4GWcorelib import ConsoleLog
+        from Py4GWCoreLib.Py4GWcorelib import Utils
+        from Py4GWCoreLib.routines_src.Agents import Agents as RoutinesAgents
+        from Py4GWCoreLib.routines_src.Checks import Checks
+
+        now = int(Utils.GetBaseTimestamp())
+        if state["started_ms"] is None:
+            state["started_ms"] = now
+
+        if definition is None:
+            _record_modular_target_error(node, "enemy", target_key, definition, "missing_registry_key", float(max_dist))
+            return BehaviorTree.NodeState.FAILURE
+        if not _modular_definition_has_runtime_identity(definition):
+            _record_modular_target_error(node, "enemy", target_key, definition, "missing_identity", float(max_dist))
+            return BehaviorTree.NodeState.FAILURE
+        if not points:
+            _set_status(node, "missing_patrol_points")
+            return BehaviorTree.NodeState.FAILURE
+        if Checks.Player.IsDead() or Checks.Player.IsCasting():
+            _set_status(node, "paused")
+            return BehaviorTree.NodeState.RUNNING
+
+        tracked_target_id = int(state.get("target_id", 0) or 0)
+        if bool(state["found_target"]) and _target_is_confirmed_dead(tracked_target_id):
+            complete = _record_target_handled(node, tracked_target_id)
+            if log:
+                ConsoleLog(
+                    "PatrolUntilEnemyKilled",
+                    f"{target_key} killed ({int(state['kills_completed'])}/{required_kills}).",
+                    Console.MessageType.Success,
+                    log=True,
+                )
+            return BehaviorTree.NodeState.SUCCESS if complete else BehaviorTree.NodeState.RUNNING
+
+        target_id = _current_target_id()
+
+        if target_id > 0:
+            try:
+                target_xy = Agent.GetXY(target_id)
+                player_xy = Player.GetXY()
+                distance = float(Utils.Distance(player_xy, target_xy))
+            except Exception as exc:
+                state["target_id"] = 0
+                state["found_target"] = False
+                state["engaged_target"] = False
+                state["lost_target_since_ms"] = None
+                _set_status(node, "target_unstable", target_id)
+                node.blackboard["patrol_enemy_last_error"] = repr(exc)
+                if log:
+                    ConsoleLog(
+                        "PatrolUntilEnemyKilled",
+                        f"Target {target_key} appeared but is not stable yet: {exc!r}",
+                        Console.MessageType.Warning,
+                        log=True,
+                    )
+                return BehaviorTree.NodeState.RUNNING
+            _set_status(node, "engaging_target", target_id)
+            state["engaged_target"] = True
+            Player.ChangeTarget(target_id)
+            if distance > float(target_distance) and now - int(state["last_move_ms"]) >= int(move_interval_ms):
+                Player.Move(float(target_xy[0]), float(target_xy[1]))
+                state["last_move_ms"] = now
+            if now - int(state["last_interact_ms"]) >= int(interact_interval_ms):
+                Player.Interact(target_id, False)
+                state["last_interact_ms"] = now
+            if 1 <= int(skill_slot) <= 8 and now - int(state["last_skill_ms"]) >= int(skill_interval_ms):
+                try:
+                    GLOBAL_CACHE.SkillBar.UseSkill(int(skill_slot), target_agent_id=target_id, aftercast_delay=0)
+                    state["last_skill_ms"] = now
+                except Exception as exc:
+                    node.blackboard["patrol_enemy_last_error"] = repr(exc)
+                    if log:
+                        ConsoleLog(
+                            "PatrolUntilEnemyKilled",
+                            f"Could not use slot {int(skill_slot)} on {target_key}: {exc!r}",
+                            Console.MessageType.Warning,
+                            log=True,
+                        )
+            return BehaviorTree.NodeState.RUNNING
+
+        if bool(state["found_target"]):
+            if not bool(state.get("engaged_target", False)):
+                state["found_target"] = False
+                state["target_id"] = 0
+                state["lost_target_since_ms"] = None
+                _set_status(node, "target_lost_before_engage")
+                return BehaviorTree.NodeState.RUNNING
+            lost_since = state.get("lost_target_since_ms")
+            if lost_since is None:
+                state["lost_target_since_ms"] = now
+                _set_status(node, "target_lost")
+                return BehaviorTree.NodeState.RUNNING
+            if now - int(lost_since) >= int(max(0, missing_target_grace_ms)):
+                handled_target_id = int(state.get("target_id", 0) or 0)
+                complete = _record_target_handled(node, handled_target_id)
+                if log:
+                    ConsoleLog(
+                        "PatrolUntilEnemyKilled",
+                        f"{target_key} no longer found after engagement ({int(state['kills_completed'])}/{required_kills}).",
+                        Console.MessageType.Success,
+                        log=True,
+                    )
+                return BehaviorTree.NodeState.SUCCESS if complete else BehaviorTree.NodeState.RUNNING
+            _set_status(node, "target_lost")
+            return BehaviorTree.NodeState.RUNNING
+
+        elapsed_ms = now - int(state["started_ms"] or now)
+        if timeout_ms > 0 and elapsed_ms >= int(timeout_ms):
+            _set_status(node, "timeout")
+            if log:
+                ConsoleLog(
+                    "PatrolUntilEnemyKilled",
+                    f"Timed out looking for {target_key} after {elapsed_ms} ms "
+                    f"({int(state['kills_completed'])}/{required_kills} killed).",
+                    Console.MessageType.Warning,
+                    log=True,
+                )
+            return BehaviorTree.NodeState.FAILURE
+
+        if bool(node.blackboard.get("COMBAT_ACTIVE", False)) and int(RoutinesAgents.GetNearestEnemy(Range.Earshot.value) or 0) > 0:
+            _set_status(node, "combat_pause")
+            return BehaviorTree.NodeState.RUNNING
+
+        point_index = int(state["point_index"]) % len(points)
+        point = points[point_index]
+        distance_to_point = float(Utils.Distance(Player.GetXY(), point))
+        if distance_to_point <= float(waypoint_tolerance):
+            state["point_index"] = (point_index + 1) % len(points)
+            point_index = int(state["point_index"]) % len(points)
+            point = points[point_index]
+
+        if now - int(state["last_move_ms"]) >= int(move_interval_ms):
+            Player.Move(float(point[0]), float(point[1]))
+            state["last_move_ms"] = now
+            previous_status = str(state["last_status"])
+            _set_status(node, "patrolling")
+            if log and previous_status != "patrolling":
+                ConsoleLog(
+                    "PatrolUntilEnemyKilled",
+                    f"Patrolling for {target_key}; next point={point}.",
+                    Console.MessageType.Info,
+                    log=True,
+                )
+
+        return BehaviorTree.NodeState.RUNNING
+
+    return BehaviorTree(
+        BehaviorTree.ActionNode(
+            name=f"PatrolUntilEnemyKilled::{target_key}",
+            action_fn=_patrol,
+        )
+    )
+
+
 def MoveAndTarget(
     pos: PointOrPath,
     target_distance: float = Range.Adjacent.value,
@@ -2742,6 +3059,20 @@ def LoadHeroSkillbar(hero_index: int, template: str, log: bool = False) -> Behav
     )
 
 
+def TakeMissionSkill(
+    slot: int = 6,
+    timeout_ms: int = 2500,
+    poll_ms: int = 150,
+    log: bool = False,
+) -> BehaviorTree:
+    return RoutinesBT.Skills.TakeMissionSkill(
+        slot=slot,
+        timeout_ms=timeout_ms,
+        poll_ms=poll_ms,
+        log=log,
+    )
+
+
 def CastSkillID(
     skill_id: int,
     target_agent_id: int = 0,
@@ -2751,6 +3082,22 @@ def CastSkillID(
 ) -> BehaviorTree:
     return RoutinesBT.Skills.CastSkillID(
         skill_id=skill_id,
+        target_agent_id=target_agent_id,
+        extra_condition=extra_condition,
+        aftercast_delay=aftercast_delay_ms,
+        log=log,
+    )
+
+
+def CastSkillSlot(
+    slot: int,
+    target_agent_id: int = 0,
+    extra_condition: bool = True,
+    aftercast_delay_ms: int = 50,
+    log: bool = False,
+) -> BehaviorTree:
+    return RoutinesBT.Skills.CastSkillSlot(
+        slot=slot,
         target_agent_id=target_agent_id,
         extra_condition=extra_condition,
         aftercast_delay=aftercast_delay_ms,
