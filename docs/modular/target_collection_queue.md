@@ -5,8 +5,8 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 
 ## Summary
 
-- Registry entries without encrypted names: 58
-- Recipe keyed target uses missing encrypted names: 119
+- Registry entries without encrypted names: 41
+- Recipe keyed target uses missing encrypted names: 88
 - Bare nearest-fallback target calls: 168
 
 ## Registry Entries Needing Encrypted Names
@@ -14,79 +14,54 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 ### Npc
 
 - [ ] `BARTHOLOS` - Bartholos (`Py4GWCoreLib/modular/domain/target_registry.py:326`)
-- [ ] `BEAR_SPIRIT` - Bear Spirit (`Py4GWCoreLib/modular/domain/target_registry.py:327`)
 - [ ] `BLIMM` - Blimm (`Py4GWCoreLib/modular/domain/target_registry.py:328`)
-- [ ] `BONWOR_FIERCEBLADE` - Bonwor Fierceblade (`Py4GWCoreLib/modular/domain/target_registry.py:329`)
-- [ ] `BUDGER_BLACKPOWDER` - Budger Blackpowder (`Py4GWCoreLib/modular/domain/target_registry.py:330`)
-- [ ] `CAPTAIN_LANGMAR` - Captain Langmar (`Py4GWCoreLib/modular/domain/target_registry.py:331`)
-- [ ] `CEMBRIEN` - Cembrien (`Py4GWCoreLib/modular/domain/target_registry.py:332`)
-- [ ] `CREVASSE` - Crevasse (`Py4GWCoreLib/modular/domain/target_registry.py:333`)
-- [ ] `EGIL_FIRETELLER` - Egil Fireteller (`Py4GWCoreLib/modular/domain/target_registry.py:334`)
-- [ ] `EXPERIMENT_KREWE_MEMBER` - Experiment Krewe Member (`Py4GWCoreLib/modular/domain/target_registry.py:335`)
-- [ ] `GADD` - Gadd (`Py4GWCoreLib/modular/domain/target_registry.py:336`)
-- [ ] `GRON_FIERCECLAW` - Gron Fierceclaw (`Py4GWCoreLib/modular/domain/target_registry.py:337`)
-- [ ] `GRON_FIERCECLAW_MERCHANT` - Gron Fierceclaw [Merchant] (`Py4GWCoreLib/modular/domain/target_registry.py:338`)
+- [ ] `BUDGER_BLACKPOWDER` - Budger Blackpowder (`Py4GWCoreLib/modular/domain/target_registry.py:333`)
+- [ ] `CAPTAIN_LANGMAR` - Captain Langmar (`Py4GWCoreLib/modular/domain/target_registry.py:334`)
+- [ ] `CEMBRIEN` - Cembrien (`Py4GWCoreLib/modular/domain/target_registry.py:335`)
+- [ ] `CREVASSE` - Crevasse (`Py4GWCoreLib/modular/domain/target_registry.py:336`)
+- [ ] `EXPERIMENT_KREWE_MEMBER` - Experiment Krewe Member (`Py4GWCoreLib/modular/domain/target_registry.py:338`)
+- [ ] `GADD` - Gadd (`Py4GWCoreLib/modular/domain/target_registry.py:339`)
 - [ ] `GUARDSMAN_CHOW` - Guardsman Chow (`Py4GWCoreLib/modular/domain/target_registry.py:304`)
 - [ ] `GUARDSMAN_CHOW_OUTPOST` - Guardsman Chow (`Py4GWCoreLib/modular/domain/target_registry.py:305`)
-- [ ] `GUNNAR_POUNDFIST` - Gunnar Poundfist (`Py4GWCoreLib/modular/domain/target_registry.py:339`)
-- [ ] `G_O_L_E_M_2_0_DEFENSE` - G.O.L.E.M. 2.0 [Defense] (`Py4GWCoreLib/modular/domain/target_registry.py:340`)
-- [ ] `G_O_L_E_M_2_0_MELEE` - G.O.L.E.M. 2.0 [Melee] (`Py4GWCoreLib/modular/domain/target_registry.py:341`)
-- [ ] `G_O_L_E_M_2_0_RANGED` - G.O.L.E.M. 2.0 [Ranged] (`Py4GWCoreLib/modular/domain/target_registry.py:342`)
-- [ ] `HIGH_PRIEST_ALKAR` - High Priest Alkar (`Py4GWCoreLib/modular/domain/target_registry.py:343`)
-- [ ] `INSCRIPTION_STONE` - Inscription Stone (`Py4GWCoreLib/modular/domain/target_registry.py:344`)
-- [ ] `JALIS_IRONHAMMER` - Jalis Ironhammer (`Py4GWCoreLib/modular/domain/target_registry.py:345`)
-- [ ] `JORA` - Jora (`Py4GWCoreLib/modular/domain/target_registry.py:346`)
-- [ ] `LEFT_SIEGE_DEVOURER` - Left Siege Devourer (`Py4GWCoreLib/modular/domain/target_registry.py:347`)
-- [ ] `LEN_CALDORON` - Len Caldoron (`Py4GWCoreLib/modular/domain/target_registry.py:348`)
-- [ ] `LIVIA` - Livia (`Py4GWCoreLib/modular/domain/target_registry.py:349`)
-- [ ] `LORK` - Lork (`Py4GWCoreLib/modular/domain/target_registry.py:350`)
-- [ ] `MACHINE_KREWE_MEMBER` - Machine Krewe Member (`Py4GWCoreLib/modular/domain/target_registry.py:351`)
-- [ ] `MAMP` - Mamp (`Py4GWCoreLib/modular/domain/target_registry.py:352`)
-- [ ] `OLFUN_LONGEYE` - Olfun Longeye (`Py4GWCoreLib/modular/domain/target_registry.py:354`)
-- [ ] `PLAXX` - Plaxx (`Py4GWCoreLib/modular/domain/target_registry.py:356`)
-- [ ] `PYRE_FIERCESHOT` - Pyre Fierceshot (`Py4GWCoreLib/modular/domain/target_registry.py:357`)
-- [ ] `RENK` - Renk (`Py4GWCoreLib/modular/domain/target_registry.py:358`)
-- [ ] `RIGHT_SIEGE_DEVOURER` - Right Siege Devourer (`Py4GWCoreLib/modular/domain/target_registry.py:359`)
-- [ ] `ROAN_FIERCEHEART` - Roan Fierceheart (`Py4GWCoreLib/modular/domain/target_registry.py:360`)
-- [ ] `SEER_FIERCEREIGN` - Seer Fiercereign (`Py4GWCoreLib/modular/domain/target_registry.py:361`)
-- [ ] `SHRINE_OF_THE_BEAR_SPIRIT` - Shrine of the Bear Spirit (`Py4GWCoreLib/modular/domain/target_registry.py:362`)
-- [ ] `SIF_SHADOWHUNTER` - Sif Shadowhunter (`Py4GWCoreLib/modular/domain/target_registry.py:367`)
-- [ ] `SILISS_YASSITH` - Siliss Yassith (`Py4GWCoreLib/modular/domain/target_registry.py:368`)
-- [ ] `SKY_KREWE_MEMBER` - Sky Krewe Member (`Py4GWCoreLib/modular/domain/target_registry.py:369`)
-- [ ] `SOKKA` - Sokka (`Py4GWCoreLib/modular/domain/target_registry.py:370`)
-- [ ] `VANGUARD_HELMET` - Vanguard Helmet (`Py4GWCoreLib/modular/domain/target_registry.py:371`)
-- [ ] `WORKER_GOLEM` - Worker Golem (`Py4GWCoreLib/modular/domain/target_registry.py:372`)
-- [ ] `YODS` - Yods (`Py4GWCoreLib/modular/domain/target_registry.py:373`)
+- [ ] `G_O_L_E_M_2_0_DEFENSE` - G.O.L.E.M. 2.0 [Defense] (`Py4GWCoreLib/modular/domain/target_registry.py:349`)
+- [ ] `G_O_L_E_M_2_0_MELEE` - G.O.L.E.M. 2.0 [Melee] (`Py4GWCoreLib/modular/domain/target_registry.py:350`)
+- [ ] `G_O_L_E_M_2_0_RANGED` - G.O.L.E.M. 2.0 [Ranged] (`Py4GWCoreLib/modular/domain/target_registry.py:351`)
+- [ ] `HIGH_PRIEST_ALKAR` - High Priest Alkar (`Py4GWCoreLib/modular/domain/target_registry.py:352`)
+- [ ] `INSCRIPTION_STONE` - Inscription Stone (`Py4GWCoreLib/modular/domain/target_registry.py:353`)
+- [ ] `JALIS_IRONHAMMER` - Jalis Ironhammer (`Py4GWCoreLib/modular/domain/target_registry.py:354`)
+- [ ] `LEFT_SIEGE_DEVOURER` - Left Siege Devourer (`Py4GWCoreLib/modular/domain/target_registry.py:356`)
+- [ ] `LEN_CALDORON` - Len Caldoron (`Py4GWCoreLib/modular/domain/target_registry.py:357`)
+- [ ] `LIVIA` - Livia (`Py4GWCoreLib/modular/domain/target_registry.py:358`)
+- [ ] `LORK` - Lork (`Py4GWCoreLib/modular/domain/target_registry.py:359`)
+- [ ] `MACHINE_KREWE_MEMBER` - Machine Krewe Member (`Py4GWCoreLib/modular/domain/target_registry.py:360`)
+- [ ] `MAMP` - Mamp (`Py4GWCoreLib/modular/domain/target_registry.py:361`)
+- [ ] `PLAXX` - Plaxx (`Py4GWCoreLib/modular/domain/target_registry.py:365`)
+- [ ] `RENK` - Renk (`Py4GWCoreLib/modular/domain/target_registry.py:367`)
+- [ ] `RIGHT_SIEGE_DEVOURER` - Right Siege Devourer (`Py4GWCoreLib/modular/domain/target_registry.py:368`)
+- [ ] `SILISS_YASSITH` - Siliss Yassith (`Py4GWCoreLib/modular/domain/target_registry.py:383`)
+- [ ] `SKY_KREWE_MEMBER` - Sky Krewe Member (`Py4GWCoreLib/modular/domain/target_registry.py:384`)
+- [ ] `SOKKA` - Sokka (`Py4GWCoreLib/modular/domain/target_registry.py:385`)
+- [ ] `WORKER_GOLEM` - Worker Golem (`Py4GWCoreLib/modular/domain/target_registry.py:387`)
+- [ ] `YODS` - Yods (`Py4GWCoreLib/modular/domain/target_registry.py:388`)
 
 ### Enemy
 
-- [ ] `ARMORED_SAURUS` - Armored Saurus (`Py4GWCoreLib/modular/domain/target_registry.py:399`)
-- [ ] `ASURA_UNDERGATE` - Asura Undergate (`Py4GWCoreLib/modular/domain/target_registry.py:400`)
-- [ ] `CHARR_PRISON_GUARD` - Charr Prison Guard (`Py4GWCoreLib/modular/domain/target_registry.py:401`)
-- [ ] `CYNDR_THE_MOUNTAIN_HEART` - Cyndr the Mountain Heart (`Py4GWCoreLib/modular/domain/target_registry.py:402`)
-- [ ] `INDESTRUCTIBLE_GOLEM` - Indestructible Golem (`Py4GWCoreLib/modular/domain/target_registry.py:404`)
-- [ ] `INSCRIBED_ETTIN` - Inscribed Ettin (`Py4GWCoreLib/modular/domain/target_registry.py:405`)
-- [ ] `INSCRIBED_SENTRY` - Inscribed Sentry (`Py4GWCoreLib/modular/domain/target_registry.py:406`)
-- [ ] `THE_GREAT_DESTROYER` - The Great Destroyer (`Py4GWCoreLib/modular/domain/target_registry.py:407`)
+- [ ] `ASURA_UNDERGATE` - Asura Undergate (`Py4GWCoreLib/modular/domain/target_registry.py:415`)
+- [ ] `CYNDR_THE_MOUNTAIN_HEART` - Cyndr the Mountain Heart (`Py4GWCoreLib/modular/domain/target_registry.py:420`)
+- [ ] `INDESTRUCTIBLE_GOLEM` - Indestructible Golem (`Py4GWCoreLib/modular/domain/target_registry.py:422`)
+- [ ] `INSCRIBED_ETTIN` - Inscribed Ettin (`Py4GWCoreLib/modular/domain/target_registry.py:423`)
+- [ ] `INSCRIBED_SENTRY` - Inscribed Sentry (`Py4GWCoreLib/modular/domain/target_registry.py:424`)
+- [ ] `THE_GREAT_DESTROYER` - The Great Destroyer (`Py4GWCoreLib/modular/domain/target_registry.py:425`)
 
 ### Gadget
 
-- [ ] `CHARR_PRISON_LOCK` - Charr Prison Lock (`Py4GWCoreLib/modular/domain/target_registry.py:430`)
-- [ ] `GOLEM_DISABLING_LEVER` - Golem Disabling Lever (`Py4GWCoreLib/modular/domain/target_registry.py:431`)
-- [ ] `INSCRIPTION_STONE` - Inscription Stone (`Py4GWCoreLib/modular/domain/target_registry.py:432`)
-- [ ] `MOUNTAIN_HEART_CHEST` - Mountain Heart Chest (`Py4GWCoreLib/modular/domain/target_registry.py:433`)
-- [ ] `MYSTICAL_KEYHOLDER` - Mystical Keyholder (`Py4GWCoreLib/modular/domain/target_registry.py:434`)
-- [ ] `UNSTABLE_MAGICAL_ENERGY_STORAGE` - Unstable Magical Energy Storage (`Py4GWCoreLib/modular/domain/target_registry.py:435`)
+- [ ] `GOLEM_DISABLING_LEVER` - Golem Disabling Lever (`Py4GWCoreLib/modular/domain/target_registry.py:449`)
+- [ ] `INSCRIPTION_STONE` - Inscription Stone (`Py4GWCoreLib/modular/domain/target_registry.py:450`)
+- [ ] `MOUNTAIN_HEART_CHEST` - Mountain Heart Chest (`Py4GWCoreLib/modular/domain/target_registry.py:451`)
+- [ ] `MYSTICAL_KEYHOLDER` - Mystical Keyholder (`Py4GWCoreLib/modular/domain/target_registry.py:452`)
+- [ ] `UNSTABLE_MAGICAL_ENERGY_STORAGE` - Unstable Magical Energy Storage (`Py4GWCoreLib/modular/domain/target_registry.py:453`)
 
 ## Keyed Recipe Uses Blocked By Missing Encrypted Names
-
-### `enemy:ARMORED_SAURUS` - Armored Saurus (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:65` `MoveToTarget`
-
-### `enemy:CHARR_PRISON_GUARD` - Charr Prison Guard (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:69` `MoveToTarget`
 
 ### `enemy:CYNDR_THE_MOUNTAIN_HEART` - Cyndr the Mountain Heart (missing encrypted names)
 
@@ -121,14 +96,6 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 
 - [ ] `Sources/modular_recipes/missions/eotn/shared.py:19` `MoveToTarget`
 
-### `gadget:CHARR_PRISON_LOCK` - Charr Prison Lock (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:79` `Interact`
-- [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:87` `Interact`
-- [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:94` `Interact`
-- [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:98` `Interact`
-- [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:107` `Interact`
-
 ### `gadget:GOLEM_DISABLING_LEVER` - Golem Disabling Lever (missing encrypted names)
 
 - [ ] `Sources/modular_recipes/missions/eotn/asura.py:82` `Interact`
@@ -157,10 +124,6 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 
 - [ ] `Sources/modular_recipes/quests/eotn/asura.py:20` `Dialog`
 
-### `npc:BEAR_SPIRIT` - Bear Spirit (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/missions/eotn/norn.py:14` `Dialog`
-
 ### `npc:BLIMM` - Blimm (missing encrypted names)
 
 - [ ] `Sources/modular_recipes/missions/eotn/asura.py:74` `Dialog`
@@ -168,12 +131,6 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 - [ ] `Sources/modular_recipes/quests/eotn/asura.py:71` `Dialog`
 - [ ] `Sources/modular_recipes/quests/eotn/asura.py:75` `Interact`
 - [ ] `Sources/modular_recipes/quests/eotn/asura.py:76` `Dialog`
-
-### `npc:BONWOR_FIERCEBLADE` - Bonwor Fierceblade (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:52` `Dialog`
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:68` `Dialog`
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:73` `Dialog`
 
 ### `npc:BUDGER_BLACKPOWDER` - Budger Blackpowder (missing encrypted names)
 
@@ -199,11 +156,6 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 
 - [ ] `Sources/modular_recipes/quests/eotn/shared.py:20` `Dialog`
 
-### `npc:EGIL_FIRETELLER` - Egil Fireteller (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/quests/eotn/norn.py:46` `Dialog`
-- [ ] `Sources/modular_recipes/quests/eotn/norn.py:53` `Dialog`
-
 ### `npc:EXPERIMENT_KREWE_MEMBER` - Experiment Krewe Member (missing encrypted names)
 
 - [ ] `Sources/modular_recipes/quests/eotn/asura.py:69` `Dialog`
@@ -213,15 +165,6 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 - [ ] `Sources/modular_recipes/quests/eotn/asura.py:47` `Interact`
 - [ ] `Sources/modular_recipes/quests/eotn/asura.py:48` `Dialog`
 
-### `npc:GRON_FIERCECLAW` - Gron Fierceclaw (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:63` `Dialog`
-
-### `npc:GRON_FIERCECLAW_MERCHANT` - Gron Fierceclaw [Merchant] (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:63` `Dialog`
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:40` `Dialog`
-
 ### `npc:GUARDSMAN_CHOW` - Guardsman Chow (missing encrypted names)
 
 - [ ] `Sources/modular_recipes/quests/factions/story.py:94` `Dialog`
@@ -229,10 +172,6 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 ### `npc:GUARDSMAN_CHOW_OUTPOST` - Guardsman Chow (missing encrypted names)
 
 - [ ] `Sources/modular_recipes/quests/factions/story.py:97` `Dialog`
-
-### `npc:GUNNAR_POUNDFIST` - Gunnar Poundfist (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/quests/eotn/norn.py:22` `Dialog`
 
 ### `npc:G_O_L_E_M_2_0_DEFENSE` - G.O.L.E.M. 2.0 [Defense] (missing encrypted names)
 
@@ -269,11 +208,6 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 - [ ] `Sources/modular_recipes/missions/eotn/shared.py:29` `Dialog`
 - [ ] `Sources/modular_recipes/quests/eotn/norn.py:11` `Dialog`
 
-### `npc:JORA` - Jora (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/quests/eotn/shared.py:66` `Dialog`
-- [ ] `Sources/modular_recipes/routes/eotn/transit.py:21` `Dialog`
-
 ### `npc:LEFT_SIEGE_DEVOURER` - Left Siege Devourer (missing encrypted names)
 
 - [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:37` `Dialog`
@@ -301,17 +235,9 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 - [ ] `Sources/modular_recipes/missions/eotn/asura.py:65` `Dialog`
 - [ ] `Sources/modular_recipes/quests/eotn/asura.py:104` `Dialog`
 
-### `npc:OLFUN_LONGEYE` - Olfun Longeye (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:15` `Dialog`
-
 ### `npc:PLAXX` - Plaxx (missing encrypted names)
 
 - [ ] `Sources/modular_recipes/quests/eotn/asura.py:87` `Dialog`
-
-### `npc:PYRE_FIERCESHOT` - Pyre Fierceshot (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:31` `Dialog`
 
 ### `npc:RENK` - Renk (missing encrypted names)
 
@@ -321,25 +247,6 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 ### `npc:RIGHT_SIEGE_DEVOURER` - Right Siege Devourer (missing encrypted names)
 
 - [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:39` `Dialog`
-
-### `npc:ROAN_FIERCEHEART` - Roan Fierceheart (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:34` `Dialog`
-
-### `npc:SEER_FIERCEREIGN` - Seer Fiercereign (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:56` `Dialog`
-
-### `npc:SHRINE_OF_THE_BEAR_SPIRIT` - Shrine of the Bear Spirit (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/missions/eotn/norn.py:22` `Interact`
-
-### `npc:SIF_SHADOWHUNTER` - Sif Shadowhunter (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/missions/eotn/norn.py:43` `Dialog`
-- [ ] `Sources/modular_recipes/missions/eotn/shared.py:71` `Interact`
-- [ ] `Sources/modular_recipes/quests/eotn/norn.py:26` `Dialog`
-- [ ] `Sources/modular_recipes/quests/eotn/norn.py:32` `Dialog`
 
 ### `npc:SILISS_YASSITH` - Siliss Yassith (missing encrypted names)
 
@@ -352,12 +259,6 @@ Collect encrypted names with the Modular Recorder, then replace display-name or 
 ### `npc:SOKKA` - Sokka (missing encrypted names)
 
 - [ ] `Sources/modular_recipes/missions/eotn/shared.py:37` `Interact`
-
-### `npc:VANGUARD_HELMET` - Vanguard Helmet (missing encrypted names)
-
-- [ ] `Sources/modular_recipes/missions/eotn/vanguard.py:14` `Dialog`
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:20` `Interact`
-- [ ] `Sources/modular_recipes/quests/eotn/vanguard.py:21` `Dialog`
 
 ### `npc:WORKER_GOLEM` - Worker Golem (missing encrypted names)
 
