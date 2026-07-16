@@ -2,6 +2,7 @@ from itertools import chain
 from typing import List, Tuple, Generator, Any, Optional, Dict
 from dataclasses import dataclass
 from enum import Enum
+import json
 import time
 import os
 from Py4GWCoreLib import (GLOBAL_CACHE, Routines, Range, Py4GW, ConsoleLog, ModelID, Botting,
@@ -9,6 +10,7 @@ from Py4GWCoreLib import (GLOBAL_CACHE, Routines, Range, Py4GW, ConsoleLog, Mode
                           IconsFontAwesome5, SkillBar, Quest, AgentArray, UIManager, Color)
 from Py4GWCoreLib.py4gwcorelib_src.Utils import Utils
 from Py4GWCoreLib.ImGui_src.ImGuisrc import ImGui
+from Py4GWCoreLib.botting_tree_src.hero_setup import hero_config_path
 from Py4GWCoreLib.enums_src.Hero_enums import HeroType
 from Py4GW import Game
 
@@ -3682,6 +3684,57 @@ def DepositProofOfTriumph():
         ConsoleLog("Proof of Triumph", "No Proof of Triumph in inventory to deposit", log=True)
 
 
+def _load_account_hero_priority() -> Optional[List[HeroType]]:
+    """Read the active account priority without creating or repairing its config file."""
+    try:
+        path = hero_config_path()
+        if not os.path.isfile(path):
+            return None
+        with open(path, "r", encoding="utf-8") as config_file:
+            config = json.load(config_file)
+        raw_priority = config.get("priority") if isinstance(config, dict) else None
+        if not isinstance(raw_priority, list):
+            raise ValueError("missing priority list")
+
+        priority: List[HeroType] = []
+        for raw_hero_id in raw_priority:
+            try:
+                hero = HeroType(int(raw_hero_id))
+            except (TypeError, ValueError):
+                continue
+            if hero is HeroType.None_ or hero in priority:
+                continue
+            priority.append(hero)
+
+        if not priority:
+            raise ValueError("priority list has no valid heroes")
+        return priority
+    except Exception as exc:
+        ConsoleLog("Hero Team", f"Could not read account hero priority; using built-in team: {exc}", log=True)
+        return None
+
+
+def _resolve_hero_list(
+    default_heroes: List[HeroType],
+    party_size: int,
+    required_first: Optional[HeroType] = None,
+) -> List[HeroType]:
+    """Use account priority when available, otherwise preserve the existing team exactly."""
+    account_priority = _load_account_hero_priority()
+    if account_priority is None:
+        return list(default_heroes)
+
+    ordered_heroes: List[HeroType] = []
+    if required_first is not None:
+        ordered_heroes.append(required_first)
+    for hero in account_priority:
+        if hero not in ordered_heroes:
+            ordered_heroes.append(hero)
+
+    hero_slots = min(len(default_heroes), max(0, int(party_size) - 1))
+    return ordered_heroes[:hero_slots]
+
+
 def AdvancedHeroTeam():
     party_size = Map.GetMaxPartySize()
 
@@ -3696,8 +3749,16 @@ def AdvancedHeroTeam():
         HeroType.Razah: "OAWjMMgMJPYTr3jLcCNdmZgeAA",
     }
 
-    hero_list = []
-    hero_list.extend([HeroType.Gwen, HeroType.Norgu, HeroType.Vekk, HeroType.MasterOfWhispers, HeroType.Olias, HeroType.Ogden, HeroType.Razah])
+    default_heroes = [
+        HeroType.Gwen,
+        HeroType.Norgu,
+        HeroType.Vekk,
+        HeroType.MasterOfWhispers,
+        HeroType.Olias,
+        HeroType.Ogden,
+        HeroType.Razah,
+    ]
+    hero_list = _resolve_hero_list(default_heroes, party_size)
 
     # Add all heroes
     for hero in hero_list:
@@ -3775,8 +3836,16 @@ def DunkoroHeroTeam():
         HeroType.Razah: "OAWjMMgMJPYTr3jLcCNdmZgeAA",
     }
 
-    hero_list = []
-    hero_list.extend([HeroType.Gwen, HeroType.Norgu, HeroType.ZhedShadowhoof, HeroType.MasterOfWhispers, HeroType.Olias, HeroType.Dunkoro, HeroType.Razah])
+    default_heroes = [
+        HeroType.Gwen,
+        HeroType.Norgu,
+        HeroType.ZhedShadowhoof,
+        HeroType.MasterOfWhispers,
+        HeroType.Olias,
+        HeroType.Dunkoro,
+        HeroType.Razah,
+    ]
+    hero_list = _resolve_hero_list(default_heroes, party_size, required_first=HeroType.Dunkoro)
 
     # Add all heroes
     for hero in hero_list:
