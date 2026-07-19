@@ -643,16 +643,28 @@ def _modular_agent_is_available(agent_id: int, target_kind: str) -> bool:
         return False
 
 
-def _modular_find_named_agent_id(target_kind: str, definition: Any, max_dist: float) -> int:
+def _modular_find_named_agent_id(
+    target_kind: str,
+    definition: Any,
+    max_dist: float,
+    pos: PointOrPath | None = None,
+) -> int:
     from Py4GWCoreLib import AgentArray
     from Py4GWCoreLib import Player
 
     if not _modular_definition_has_runtime_identity(definition):
         return 0
 
-    px, py = Player.GetXY()
-    agents = AgentArray.Filter.ByDistance(_modular_agents_for_kind(target_kind), (px, py), float(max_dist))
-    agents = AgentArray.Sort.ByDistance(agents, (px, py))
+    scan_pos: tuple[float, float]
+    if pos is not None:
+        point = _final_point(pos)
+        scan_pos = (float(point.x), float(point.y))
+    else:
+        px, py = Player.GetXY()
+        scan_pos = (float(px), float(py))
+
+    agents = AgentArray.Filter.ByDistance(_modular_agents_for_kind(target_kind), scan_pos, float(max_dist))
+    agents = AgentArray.Sort.ByDistance(agents, scan_pos)
     for agent_id in agents:
         candidate_id = int(agent_id)
         if not _modular_agent_is_available(candidate_id, target_kind):
@@ -662,7 +674,13 @@ def _modular_find_named_agent_id(target_kind: str, definition: Any, max_dist: fl
     return 0
 
 
-def TargetNamedAgent(kind: str, key: str, max_dist: float = 4500.0, log: bool = False) -> BehaviorTree:
+def TargetNamedAgent(
+    kind: str,
+    key: str,
+    max_dist: float = 4500.0,
+    log: bool = False,
+    pos: PointOrPath | None = None,
+) -> BehaviorTree:
     from Py4GWCoreLib.modular.domain.target_registry import get_named_agent_target
 
     target_kind = str(kind or "npc").strip().lower()
@@ -690,7 +708,7 @@ def TargetNamedAgent(kind: str, key: str, max_dist: float = 4500.0, log: bool = 
                 float(max_dist),
             )
             return BehaviorTree.NodeState.FAILURE
-        agent_id = _modular_find_named_agent_id(target_kind, definition, float(max_dist))
+        agent_id = _modular_find_named_agent_id(target_kind, definition, float(max_dist), pos=pos)
         if agent_id <= 0:
             _record_modular_target_error(node, target_kind, target_key, definition, "not_found", float(max_dist))
             return BehaviorTree.NodeState.FAILURE
@@ -897,7 +915,13 @@ def _target_for_interaction(
 ) -> BehaviorTree:
     target_kind = str(kind or "npc").strip().lower()
     if key:
-        return TargetNamedAgent(kind=target_kind, key=key, max_dist=max_dist, log=log)
+        return TargetNamedAgent(
+            kind=target_kind,
+            key=key,
+            max_dist=target_distance if pos is not None else max_dist,
+            log=log,
+            pos=pos,
+        )
     if model_id is not None:
         return TargetAgentByModelID(modelID_or_encStr=model_id, log=log)
     if pos is not None:
@@ -2743,14 +2767,14 @@ def IsItemEquipped(modelID_or_encStr: int | str) -> BehaviorTree:
 
 
 def EquipItemByModelID(modelID_or_encStr: int | str, aftercast_ms: int = 250, log: bool = False) -> BehaviorTree:
-    from Py4GWCoreLib.Agent import Agent
-    from Py4GWCoreLib import GLOBAL_CACHE
-    from Py4GWCoreLib.py4gwcorelib_src.Console import Console
-    from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
-
     verify_aftercast_ms = max(250, int(aftercast_ms))
 
     def _is_item_equipped() -> BehaviorTree.NodeState:
+        from Py4GWCoreLib import GLOBAL_CACHE
+        from Py4GWCoreLib.Agent import Agent
+        from Py4GWCoreLib.py4gwcorelib_src.Console import Console
+        from Py4GWCoreLib.py4gwcorelib_src.Console import ConsoleLog
+
         resolved_model_id = (
             Agent.GetModelIDByEncString(modelID_or_encStr)
             if isinstance(modelID_or_encStr, str)
@@ -2833,6 +2857,14 @@ def DestroyBonusItems(exclude_list: list[int] = [], log: bool = False, aftercast
 
 def SpawnBonusItems(log: bool = False, spawn_settle_ms: int = 50) -> BehaviorTree:
     return RoutinesBT.Items.SpawnBonusItems(log=log, aftercast_ms=spawn_settle_ms)
+
+
+def UseConsumableByModelID(model_id: int, effect_name: str = "", aftercast_ms: int = 100) -> BehaviorTree:
+    return RoutinesBT.Items.UseConsumable(
+        modelID_or_encStr=model_id,
+        effect_name=effect_name,
+        aftercast_ms=aftercast_ms,
+    )
 
 
 def SpawnAndDestroyBonusItems(exclude_list: list[int] = [], log: bool = False) -> BehaviorTree:

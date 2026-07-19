@@ -16,6 +16,7 @@ def abbadons_gate() -> BehaviorTree:
             BT.Dialog(kind='npc', key='KEEPER_SHARISSH', dialog_ids=['0x81', '0x84']),
             BT.Wait(duration_ms=7600),
             BT.WaitForMapLoad(map_id=496, timeout_ms=10000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[(-138, 4798), (-388, 3011), (-1493, 3553)], pause_on_combat=True
             ),
@@ -63,6 +64,7 @@ def gate_of_madness() -> BehaviorTree:
             BT.Dialog(kind='npc', key='RUNIC_ORACLE', dialog_ids=['0x81', '0x84']),
             BT.Wait(duration_ms=10000),
             BT.WaitForMapLoad(map_id=495, timeout_ms=10000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[(5149, 14955), (9919, 7402), (10562, -1123)], pause_on_combat=True
             ),
@@ -107,6 +109,7 @@ def gate_of_pain() -> BehaviorTree:
             BT.Dialog(kind='npc', key='JARINDOK', dialog_ids=['0x81', '0x84']),
             BT.Wait(duration_ms=9200),
             BT.WaitForMapLoad(map_id=494, timeout_ms=10000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[(26156, -7688), (23130, -9431), (18595, -10875), (15266, -12130), (10988, -11961), (7709, -9382)],
                 pause_on_combat=True,
@@ -211,23 +214,23 @@ RECIPES: tuple[dict[str, object], ...] = (
         'key': 'nightfall/abbadons_gate',
         'title': "Abaddon's Gate",
         'factory': 'abbadons_gate',
-        'source_steps': 24,
-        'raw_steps': 24,
+        'source_steps': 25,
+        'raw_steps': 25,
     },
     {
         'kind': 'mission',
         'key': 'nightfall/gate_of_madness',
         'title': 'Gate of Madness',
         'factory': 'gate_of_madness',
-        'source_steps': 31,
-        'raw_steps': 31,
+        'source_steps': 32,
+        'raw_steps': 32,
     },
     {
         'kind': 'mission',
         'key': 'nightfall/gate_of_pain',
         'title': 'Gate of Pain',
         'factory': 'gate_of_pain',
-        'source_steps': 18,
-        'raw_steps': 18,
+        'source_steps': 19,
+        'raw_steps': 19,
     },
 )

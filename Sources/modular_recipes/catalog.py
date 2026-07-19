@@ -38,7 +38,11 @@ RECIPE_MODULES: tuple[str, ...] = (
     'Sources.modular_recipes.quests.factions.story',
     'Sources.modular_recipes.quests.fow.fissure_of_woe',
     'Sources.modular_recipes.quests.general',
-    'Sources.modular_recipes.quests.nightfall.story',
+    'Sources.modular_recipes.quests.nightfall.istan',
+    'Sources.modular_recipes.quests.nightfall.kourna',
+    'Sources.modular_recipes.quests.nightfall.vabbi',
+    'Sources.modular_recipes.quests.nightfall.desolation',
+    'Sources.modular_recipes.quests.nightfall.realm_of_torment',
     'Sources.modular_recipes.quests.prophecies.ascalon',
     'Sources.modular_recipes.quests.prophecies.kryta',
     'Sources.modular_recipes.quests.prophecies.maguuma_jungle',
@@ -46,6 +50,7 @@ RECIPE_MODULES: tuple[str, ...] = (
     'Sources.modular_recipes.quests.prophecies.ring_of_fire',
     'Sources.modular_recipes.quests.prophecies.story',
     'Sources.modular_recipes.routes.eotn.transit',
+    'Sources.modular_recipes.routes.nightfall.transit',
     'Sources.modular_recipes.routes.prophecies.transit',
 )
 

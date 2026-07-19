@@ -13,6 +13,7 @@ def aurora_glade() -> BehaviorTree:
             BT.Travel(target_map_id=12, leave_party=True),
             BT.LoadParty(max_heroes=6),
             BT.EnterChallenge(target_map_id=12, delay_ms=5000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[
                     (-12207, 5416),
@@ -169,6 +170,7 @@ def bloodstone_fen() -> BehaviorTree:
             BT.Travel(target_map_id=10, leave_party=True),
             BT.LoadParty(max_heroes=6),
             BT.EnterChallenge(target_map_id=10, delay_ms=5000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[(21176, -1496), (17252, -143), (14074, -696), (14074, -696), (11358, -947)],
                 pause_on_combat=True,
@@ -329,6 +331,7 @@ def the_wilds() -> BehaviorTree:
             BT.Travel(target_map_id=11, leave_party=True),
             BT.LoadParty(max_heroes=6),
             BT.EnterChallenge(target_map_id=11, delay_ms=5000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[
                     (15697, -9078),
@@ -730,23 +733,23 @@ RECIPES: tuple[dict[str, object], ...] = (
         'key': 'prophecies/aurora_glade',
         'title': 'Aurora Glade',
         'factory': 'aurora_glade',
-        'source_steps': 77,
-        'raw_steps': 77,
+        'source_steps': 78,
+        'raw_steps': 78,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/bloodstone_fen',
         'title': 'Bloodstone Fen',
         'factory': 'bloodstone_fen',
-        'source_steps': 50,
-        'raw_steps': 50,
+        'source_steps': 51,
+        'raw_steps': 51,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/the_wilds',
         'title': 'The Wilds',
         'factory': 'the_wilds',
-        'source_steps': 16,
-        'raw_steps': 16,
+        'source_steps': 17,
+        'raw_steps': 17,
     },
 )

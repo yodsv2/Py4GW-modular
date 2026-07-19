@@ -66,11 +66,22 @@ def main() -> int:
     capture = module._target_capture("npc", 1)
     assert capture is not None
     module._remember_capture(capture)
+    module._record_interact("npc")
+    module._record_dialog(0x82C504)
+    module._record_wait_until_explorable()
     module._add_line("BT.Wait(duration_ms=100)")
     output = module._full_output()
     assert "def new_recording() -> BehaviorTree:" in output
+    assert "BT.Interact(kind='npc', key='TEST_TARGET', pos=(100, 200))" in output
+    assert "BT.Dialog(kind='npc', key='TEST_TARGET', dialog_ids=['0x82c504'], pos=(100, 200))" in output
+    assert "BT.WaitUntilOnExplorable(timeout_ms=30000)" in output
     assert "BT.Wait(duration_ms=100)" in output
+    assert (
+        "ADD or EXTEND the following NPCs in enum `NPC_TARGETS` at "
+        "`Py4GWCoreLib/modular/domain/target_registry.py`:"
+    ) in output
     assert '"TEST_TARGET": (((1, 2, 3, 4),), ' in output
+    assert module._registry_block_for_capture(capture).startswith("ADD or EXTEND the following NPCs")
     module._copy_current_xy()
     assert sys.modules["PyImGui"].clipboard_text == "(100, 200)"
     print("modular_recorder_emitters: ok")

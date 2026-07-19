@@ -13,6 +13,7 @@ def borlis_pass() -> BehaviorTree:
             BT.Travel(target_map_id=25, leave_party=True),
             BT.LoadParty(max_heroes=6),
             BT.EnterChallenge(target_map_id=25, delay_ms=5000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(pos=(19916, 1622), pause_on_combat=True),
             BT.Interact(kind='npc'),
             BT.MoveAndKill(pos=(19591, 1503), pause_on_combat=True),
@@ -175,6 +176,7 @@ def the_frost_gate() -> BehaviorTree:
             BT.Travel(target_map_id=21, leave_party=True),
             BT.LoadParty(max_heroes=6),
             BT.EnterChallenge(target_map_id=21, delay_ms=5000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[
                     (1720, 28972),
@@ -500,15 +502,15 @@ RECIPES: tuple[dict[str, object], ...] = (
         'key': 'prophecies/borlis_pass',
         'title': 'Borlis Pass',
         'factory': 'borlis_pass',
-        'source_steps': 55,
-        'raw_steps': 55,
+        'source_steps': 56,
+        'raw_steps': 56,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/the_frost_gate',
         'title': 'The Frost Gate',
         'factory': 'the_frost_gate',
-        'source_steps': 33,
-        'raw_steps': 33,
+        'source_steps': 34,
+        'raw_steps': 34,
     },
 )

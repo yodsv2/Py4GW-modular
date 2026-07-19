@@ -13,6 +13,7 @@ def fort_ranik() -> BehaviorTree:
             BT.Travel(target_map_id=29, leave_party=True),
             BT.LoadParty(max_heroes=4),
             BT.EnterChallenge(target_map_id=29, delay_ms=5000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[
                     (-4509, -28034),
@@ -142,6 +143,7 @@ def nolani_academy() -> BehaviorTree:
             BT.Travel(target_map_id=32, leave_party=True),
             BT.LoadParty(max_heroes=4),
             BT.EnterChallenge(target_map_id=32, delay_ms=5000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[
                     (-1574, 13049),
@@ -261,6 +263,7 @@ def ruins_of_surmia() -> BehaviorTree:
             BT.Travel(target_map_id=30, leave_party=True),
             BT.LoadParty(max_heroes=4),
             BT.EnterChallenge(target_map_id=30, delay_ms=5000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[
                     (-3134, -11907),
@@ -387,6 +390,7 @@ def the_great_northern_wall() -> BehaviorTree:
             BT.Travel(target_map_id=28, leave_party=True),
             BT.LoadParty(max_heroes=4),
             BT.EnterChallenge(target_map_id=28, delay_ms=5000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(pos=[(5770, -12799), (5085, -12095)], pause_on_combat=True),
             BT.Interact(kind='npc'),
             BT.Wait(duration_ms=1000),
@@ -809,31 +813,31 @@ RECIPES: tuple[dict[str, object], ...] = (
         'key': 'prophecies/fort_ranik',
         'title': 'Fort Ranik',
         'factory': 'fort_ranik',
-        'source_steps': 33,
-        'raw_steps': 33,
+        'source_steps': 34,
+        'raw_steps': 34,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/nolani_academy',
         'title': 'Nolani Academy',
         'factory': 'nolani_academy',
-        'source_steps': 17,
-        'raw_steps': 17,
+        'source_steps': 18,
+        'raw_steps': 18,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/ruins_of_surmia',
         'title': 'Ruins of Surmia',
         'factory': 'ruins_of_surmia',
-        'source_steps': 27,
-        'raw_steps': 27,
+        'source_steps': 28,
+        'raw_steps': 28,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/the_great_northern_wall',
         'title': 'The Great Northern Wall',
         'factory': 'the_great_northern_wall',
-        'source_steps': 28,
-        'raw_steps': 28,
+        'source_steps': 29,
+        'raw_steps': 29,
     },
 )

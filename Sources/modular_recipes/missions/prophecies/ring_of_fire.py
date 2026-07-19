@@ -13,6 +13,7 @@ def abaddons_mouth() -> BehaviorTree:
             BT.Travel(target_map_id=123, leave_party=True),
             BT.LoadParty(max_heroes=8),
             BT.EnterChallenge(target_map_id=123, delay_ms=6000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[(16815, 10580), (11738, 5359), (6022, 947), (1999, 2820), (-4335, 627), (-1520, -2907)],
                 pause_on_combat=True,
@@ -34,6 +35,7 @@ def hells_precipice() -> BehaviorTree:
             BT.Travel(target_map_id=124, leave_party=True),
             BT.LoadParty(max_heroes=8),
             BT.EnterChallenge(target_map_id=124, delay_ms=6000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.UseConsumables(mode='all', multibox=False, leader_only=True),
             BT.Wait(duration_ms=1000),
             BT.MoveAndKill(
@@ -58,6 +60,7 @@ def ring_of_fire() -> BehaviorTree:
             BT.Travel(target_map_id=122, leave_party=True),
             BT.LoadParty(max_heroes=8),
             BT.EnterChallenge(target_map_id=122, delay_ms=6000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.UseConsumables(mode='all', multibox=False, leader_only=True),
             BT.Wait(duration_ms=1000),
             BT.MoveAndKill(
@@ -135,23 +138,23 @@ RECIPES: tuple[dict[str, object], ...] = (
         'key': 'prophecies/abaddons_mouth',
         'title': "Abaddon's Mouth",
         'factory': 'abaddons_mouth',
-        'source_steps': 7,
-        'raw_steps': 7,
+        'source_steps': 8,
+        'raw_steps': 8,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/hells_precipice',
         'title': "Hell's Precipice",
         'factory': 'hells_precipice',
-        'source_steps': 9,
-        'raw_steps': 9,
+        'source_steps': 10,
+        'raw_steps': 10,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/ring_of_fire',
         'title': 'Ring of Fire',
         'factory': 'ring_of_fire',
-        'source_steps': 15,
-        'raw_steps': 15,
+        'source_steps': 16,
+        'raw_steps': 16,
     },
 )

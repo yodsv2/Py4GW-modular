@@ -35,6 +35,12 @@ GOOD = (0.42, 0.88, 0.55, 1.0)
 WARN = (1.00, 0.78, 0.32, 1.0)
 BAD = (1.00, 0.38, 0.38, 1.0)
 MUTED = (0.62, 0.66, 0.70, 1.0)
+TARGET_REGISTRY_PATH = 'Py4GWCoreLib/modular/domain/target_registry.py'
+TARGET_REGISTRY_SECTIONS = (
+    ('npc', 'NPCs', 'NPC_TARGETS'),
+    ('enemy', 'enemies', 'ENEMY_TARGETS'),
+    ('gadget', 'gadgets', 'GADGET_TARGETS'),
+)
 
 
 @dataclass(frozen=True)
@@ -43,6 +49,7 @@ class TargetCapture:
     key: str
     display_name: str
     encoded_name: tuple[int, ...]
+    target_pos: tuple[int, int] | None
     registry_entry: str
 
 
@@ -101,6 +108,14 @@ def _current_xy() -> tuple[int, int]:
     return int(x), int(y)
 
 
+def _agent_xy(agent_id: int) -> tuple[int, int] | None:
+    try:
+        x, y = Agent.GetXY(agent_id)
+    except Exception:
+        return None
+    return int(x), int(y)
+
+
 def _target_registry_for_kind(kind: str) -> dict[str, object]:
     return dict(get_target_registry().get(kind, {}))
 
@@ -136,7 +151,14 @@ def _target_capture(kind: str, agent_id: int) -> TargetCapture | None:
     key = _enum_key_from_name(display_name, kind.upper())
     encoded_text = ', '.join(str(value) for value in encoded_name)
     entry = f'"{key}": ((({encoded_text}),), {_safe_string(display_name)}),'
-    return TargetCapture(kind=kind, key=key, display_name=display_name, encoded_name=encoded_name, registry_entry=entry)
+    return TargetCapture(
+        kind=kind,
+        key=key,
+        display_name=display_name,
+        encoded_name=encoded_name,
+        target_pos=_agent_xy(agent_id),
+        registry_entry=entry,
+    )
 
 
 def _remember_capture(capture: TargetCapture) -> None:
@@ -161,13 +183,28 @@ def _line_block() -> str:
 
 def _registry_block() -> str:
     sections: list[str] = []
-    for kind, title in (('npc', 'NPC_TARGETS'), ('enemy', 'ENEMY_TARGETS'), ('gadget', 'GADGET_TARGETS')):
+    for kind, label, enum_name in TARGET_REGISTRY_SECTIONS:
         entries = _captured_registry_entries[kind]
         if not entries:
             continue
-        sections.append(f'# {title}')
-        sections.extend(entries[key] for key in sorted(entries))
-    return '\n'.join(sections)
+        sections.append(_registry_entries_block(label, enum_name, [entries[key] for key in sorted(entries)]))
+    return '\n\n'.join(sections)
+
+
+def _registry_entries_block(label: str, enum_name: str, entries: list[str]) -> str:
+    lines = [
+        f'ADD or EXTEND the following {label} in enum `{enum_name}` at `{TARGET_REGISTRY_PATH}`:',
+        '',
+    ]
+    lines.extend(entries)
+    return '\n'.join(lines)
+
+
+def _registry_block_for_capture(capture: TargetCapture) -> str:
+    for kind, label, enum_name in TARGET_REGISTRY_SECTIONS:
+        if capture.kind == kind:
+            return _registry_entries_block(label, enum_name, [capture.registry_entry])
+    return capture.registry_entry
 
 
 def _route_points_block() -> str:
@@ -298,12 +335,17 @@ def _record_wait() -> None:
     _add_line(f'BT.Wait(duration_ms={elapsed_ms})')
 
 
+def _record_wait_until_explorable() -> None:
+    _add_line('BT.WaitUntilOnExplorable(timeout_ms=30000)')
+
+
 def _record_interact(kind: str) -> None:
     capture = _target_capture(kind, int(Player.GetTargetID() or 0))
     if capture is None:
         return
     _remember_capture(capture)
-    _add_line(f"BT.Interact(kind='{kind}', key='{capture.key}')")
+    pos_arg = f', pos={_fmt_point(capture.target_pos)}' if capture.target_pos is not None else ''
+    _add_line(f"BT.Interact(kind='{kind}', key='{capture.key}'{pos_arg})")
 
 
 def _record_dialog(dialog_id: int) -> None:
@@ -311,7 +353,8 @@ def _record_dialog(dialog_id: int) -> None:
     if capture is None:
         return
     _remember_capture(capture)
-    _add_line(f"BT.Dialog(kind='npc', key='{capture.key}', dialog_ids=[{_safe_string(hex(int(dialog_id)))}])")
+    pos_arg = f', pos={_fmt_point(capture.target_pos)}' if capture.target_pos is not None else ''
+    _add_line(f"BT.Dialog(kind='npc', key='{capture.key}', dialog_ids=[{_safe_string(hex(int(dialog_id)))}]{pos_arg})")
 
 
 def _record_enemy_target() -> None:
@@ -432,6 +475,8 @@ def _draw_controls() -> None:
         _record_wait()
     if _grid_button('Wait Map Load', 1, help_text='Record wait for current map id.'):
         _add_line(f'BT.WaitForMapLoad(map_id={int(Map.GetMapID() or 0)}, timeout_ms=10000)')
+    if _grid_button('Wait Explorable', 2, help_text='Record wait until the current map is explorable.'):
+        _record_wait_until_explorable()
 
     PyImGui.spacing()
     PyImGui.text_colored('Target', MUTED)
@@ -496,7 +541,7 @@ def _draw_target_panel() -> None:
             kind = 'npc'
         capture = _target_capture(kind, target_id) if kind != 'item' else None
         if capture is not None:
-            _copy(capture.registry_entry, 'target registry entry')
+            _copy(_registry_block_for_capture(capture), 'target registry entry')
 
 
 def _draw_dialog_options() -> None:

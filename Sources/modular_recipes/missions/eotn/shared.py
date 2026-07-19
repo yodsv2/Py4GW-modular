@@ -15,6 +15,7 @@ def a_time_for_heroes() -> BehaviorTree:
             BT.MoveAndKill(pos=(17, -820), pause_on_combat=True),
             BT.Dialog(kind='npc', key='HIGH_PRIEST_ALKAR', dialog_ids=['0x86', '0x84']),
             BT.WaitForMapLoad(map_id=673, timeout_ms=10000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(pos=[(-15488, 19062), (-14486, 16187)], pause_on_combat=True),
             BT.MoveToTarget(kind='enemy', key='THE_GREAT_DESTROYER'),
             BT.WaitForMapLoad(map_id=710, timeout_ms=10000),
@@ -138,8 +139,8 @@ RECIPES: tuple[dict[str, object], ...] = (
         'key': 'eotn/a_time_for_heroes',
         'title': 'A Time for Heroes',
         'factory': 'a_time_for_heroes',
-        'source_steps': 8,
-        'raw_steps': 8,
+        'source_steps': 9,
+        'raw_steps': 9,
     },
     {
         'kind': 'mission',

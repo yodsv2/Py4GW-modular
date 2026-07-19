@@ -4,6 +4,61 @@ from __future__ import annotations
 
 from Py4GWCoreLib.py4gwcorelib_src.BehaviorTree import BehaviorTree
 from Sources.ApoSource.ApoBottingLib import wrappers as BT
+def new_recording() -> BehaviorTree:
+    return BT.Sequence(
+        name='New Recording',
+        children=[
+            BT.Dialog(kind='npc', key='FIRST_SPEAR_JAHDUGAR', dialog_ids=['0x81'], pos=(3482, -5167)),
+            BT.Dialog(kind='npc', key='FIRST_SPEAR_JAHDUGAR', dialog_ids=['0x84'], pos=(3482, -5167)),
+        ],
+    )
+
+
+def chahbek_village() -> BehaviorTree:
+    return BT.Sequence(
+        name='Chahbek Village',
+        children=[
+            BT.Travel(target_map_id=544, leave_party=True),
+            BT.SpawnBonusItems(log=True),
+            BT.CreateParty(hero_ids=[6], henchman_ids=[1, 2], multibox_invite=False, log=True),
+            BT.Dialog(kind='npc', key='FIRST_SPEAR_JAHDUGAR', dialog_ids=['0x81'], pos=(3482, -5167)),
+            BT.Dialog(kind='npc', key='FIRST_SPEAR_JAHDUGAR', dialog_ids=['0x84'], pos=(3482, -5167)),
+            BT.Wait(duration_ms=2000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
+            BT.UseConsumableByModelID(30847),
+            BT.VanquishNode(
+                name='Clear Chahbek First Path',
+                steps=[
+                    (227, -5658),
+                    (-1144, -4378),
+                    (-2058, -3494),
+                    (-1725, -2551),
+                    (-2435.07, -6440.10),
+                    (-4212.00, -6730.00),
+                ],
+                clear_area_radius=400,
+                pause_on_combat=True,
+            ),
+            BT.MoveAndInteractWithGadget(pos=(-4725, -1830), pause_on_combat=True, log=True),
+            BT.FlagAllHeroes(-1891.88, 575.85),
+            BT.Wait(duration_ms=2000),
+            BT.MoveAndInteractWithGadget(pos=(-1725, -2550), pause_on_combat=True, log=True),
+            BT.Wait(duration_ms=1500),
+            BT.InteractWithGadgetAtXY(pos=(-1725, -2550)),
+            BT.MoveAndInteractWithGadget(pos=(-4725, -1830), pause_on_combat=True, log=True),
+            BT.MoveAndInteractWithGadget(pos=(-1731, -4138), pause_on_combat=True, log=True),
+            BT.UnflagAllHeroes(),
+            BT.Wait(duration_ms=2000),
+            BT.InteractWithGadgetAtXY(pos=(-1731, -4138)),
+            BT.VanquishNode(
+                name='Clear Chahbek Final Path',
+                steps=[(-1891.88, 575.85)],
+                clear_area_radius=400,
+                pause_on_combat=True,
+            ),
+            BT.WaitForMapLoad(map_id=456, timeout_ms=120000),
+        ],
+    )
 
 
 def blacktide_den() -> BehaviorTree:
@@ -16,6 +71,7 @@ def blacktide_den() -> BehaviorTree:
             BT.Dialog(kind='npc', key='SAVAGE_NUNBE', dialog_ids=['0x81', '0x84']),
             BT.Wait(duration_ms=10000),
             BT.WaitForMapLoad(map_id=492, timeout_ms=10000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(pos=(-2506, 13286), pause_on_combat=True),
             BT.OptionalInteractItemByModel(model_id=17054, point=None, max_dist=4500),
             BT.WaitForMapLoad(map_id=492, timeout_ms=10000),
@@ -68,6 +124,7 @@ def consulate_docks() -> BehaviorTree:
             BT.Dialog(kind='npc', key='RAIDMARSHAL_MEHDARA', dialog_ids=['0x81', '0x84']),
             BT.Wait(duration_ms=8000),
             BT.WaitForMapLoad(map_id=493, timeout_ms=10000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(pos=(-15366, -6597), pause_on_combat=True),
             BT.MoveAndKill(
                 pos=[(-12826, -4983), (-9033, -3993), (-7996, -2981), (-9111, -2954), (-9039, -4130), (-8078, -4147)],
@@ -141,6 +198,21 @@ def jokanur_diggings() -> BehaviorTree:
 
 
 ROUTE_POINTS_BY_RECIPE: dict[str, tuple[tuple[float, float], ...]] = {
+    'chahbek_village': (
+        (3485.0, -5246.0),
+        (227.0, -5658.0),
+        (-1144.0, -4378.0),
+        (-2058.0, -3494.0),
+        (-1725.0, -2551.0),
+        (-2435.07, -6440.10),
+        (-4212.00, -6730.00),
+        (-4725.0, -1830.0),
+        (-1891.88, 575.85),
+        (-1725.0, -2550.0),
+        (-4725.0, -1830.0),
+        (-1731.0, -4138.0),
+        (-1891.88, 575.85),
+    ),
     'blacktide_den': (
         (2095.0, 769.0),
         (-2506.0, 13286.0),
@@ -223,19 +295,27 @@ ROUTE_POINTS_BY_RECIPE: dict[str, tuple[tuple[float, float], ...]] = {
 RECIPES: tuple[dict[str, object], ...] = (
     {
         'kind': 'mission',
+        'key': 'nightfall/chahbek_village',
+        'title': 'Chahbek Village',
+        'factory': 'chahbek_village',
+        'source_steps': 21,
+        'raw_steps': 21,
+    },
+    {
+        'kind': 'mission',
         'key': 'nightfall/blacktide_den',
         'title': 'Blacktide Den',
         'factory': 'blacktide_den',
-        'source_steps': 23,
-        'raw_steps': 23,
+        'source_steps': 24,
+        'raw_steps': 24,
     },
     {
         'kind': 'mission',
         'key': 'nightfall/consulate_docks',
         'title': 'Consulate Docks',
         'factory': 'consulate_docks',
-        'source_steps': 16,
-        'raw_steps': 16,
+        'source_steps': 17,
+        'raw_steps': 17,
     },
     {
         'kind': 'mission',

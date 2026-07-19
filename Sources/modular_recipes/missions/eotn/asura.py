@@ -12,6 +12,7 @@ def finding_the_bloodstone() -> BehaviorTree:
         children=[
             BT.Dialog(kind='npc', key='INSCRIPTION_STONE', dialog_ids=['0x84']),
             BT.WaitForMapLoad(map_id=661, timeout_ms=10000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(pos=[(17494, 15175), (16243, 10279), (15709, 8096)], pause_on_combat=True),
             BT.MoveToTarget(kind='enemy', key='INSCRIBED_SENTRY'),
             BT.MoveToTarget(kind='enemy', key='INSCRIBED_SENTRY'),
@@ -46,6 +47,7 @@ def genius_operated_living_enchanted_manifestation() -> BehaviorTree:
             BT.MoveAndKill(pos=(16109, 15251), pause_on_combat=True),
             BT.Dialog(kind='npc', key='MAMP', dialog_ids=['0x81', '0x84']),
             BT.WaitForMapLoad(map_id=664, timeout_ms=10000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[(-20477, 8497), (-18454, 11236), (-16538, 14435), (-11017, 12502), (-9218, 11874), (-7822, 13260)],
                 pause_on_combat=True,
@@ -250,16 +252,16 @@ RECIPES: tuple[dict[str, object], ...] = (
         'key': 'eotn/finding_the_bloodstone',
         'title': 'Finding the Bloodstone',
         'factory': 'finding_the_bloodstone',
-        'source_steps': 23,
-        'raw_steps': 23,
+        'source_steps': 24,
+        'raw_steps': 24,
     },
     {
         'kind': 'mission',
         'key': 'eotn/genius_operated_living_enchanted_manifestation',
         'title': 'Genius Operated Living Enchanted Manifestation',
         'factory': 'genius_operated_living_enchanted_manifestation',
-        'source_steps': 16,
-        'raw_steps': 16,
+        'source_steps': 17,
+        'raw_steps': 17,
     },
     {
         'kind': 'mission',

@@ -13,6 +13,7 @@ def ice_caves_of_sorrow() -> BehaviorTree:
             BT.Travel(target_map_id=22, leave_party=True),
             BT.LoadParty(max_heroes=8),
             BT.EnterChallenge(target_map_id=22, delay_ms=6000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(
                 pos=[(-11206, -8611), (-8752, -4005), (-12297, -2421), (-11471, 1089)],
                 pause_on_combat=True,
@@ -64,6 +65,7 @@ def iron_mines_of_moladune() -> BehaviorTree:
             BT.Travel(target_map_id=24, leave_party=True),
             BT.LoadParty(max_heroes=8),
             BT.EnterChallenge(target_map_id=24, delay_ms=6000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.MoveAndKill(pos=[(3457, -30117), (5596, -28039)], pause_on_combat=True),
             BT.MoveAndKill(
                 pos=[
@@ -101,6 +103,7 @@ def thunderhead_keep() -> BehaviorTree:
             BT.Travel(target_map_id=23, leave_party=True),
             BT.LoadParty(max_heroes=8),
             BT.EnterChallenge(target_map_id=23, delay_ms=6000),
+            BT.WaitUntilOnExplorable(timeout_ms=30000),
             BT.Dialog(pos=(-7940, -17877), dialog_ids=['0x84']),
             BT.MoveAndKill(
                 pos=[
@@ -192,23 +195,23 @@ RECIPES: tuple[dict[str, object], ...] = (
         'key': 'prophecies/ice_caves_of_sorrow',
         'title': 'Ice Caves of Sorrow',
         'factory': 'ice_caves_of_sorrow',
-        'source_steps': 15,
-        'raw_steps': 15,
+        'source_steps': 16,
+        'raw_steps': 16,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/iron_mines_of_moladune',
         'title': 'Iron Mines of Moladune',
         'factory': 'iron_mines_of_moladune',
-        'source_steps': 10,
-        'raw_steps': 10,
+        'source_steps': 11,
+        'raw_steps': 11,
     },
     {
         'kind': 'mission',
         'key': 'prophecies/thunderhead_keep',
         'title': 'Thunderhead Keep',
         'factory': 'thunderhead_keep',
-        'source_steps': 7,
-        'raw_steps': 7,
+        'source_steps': 8,
+        'raw_steps': 8,
     },
 )

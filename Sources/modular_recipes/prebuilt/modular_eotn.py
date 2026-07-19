@@ -14,7 +14,6 @@ EOTN_PHASE_SPECS: list[tuple[str, str, str, str]] = [
     ('Access', 'quest', 'eotn/against_the_destroyers_start', 'Against the Destroyers Start'),
     ('Outpost Unlocks', 'route', 'eotn/eotn_to_gunnars', "Eye of the North to Gunnar's Hold"),
     ('Outpost Unlocks', 'route', 'eotn/gunnars_to_longeyes', "Gunnar's Hold to Longeye's Ledge"),
-    ('Outpost Unlocks', 'route', 'eotn/longeyes_to_doomlore', "Longeye's Ledge to Doomlore Shrine"),
     ('Outpost Unlocks', 'route', 'eotn/gunnars_to_sifhala', "Gunnar's Hold to Sifhalla"),
     ('Outpost Unlocks', 'route', 'eotn/sifhalla_to_olafstead', 'Sifhalla to Olafstead'),
     ('Outpost Unlocks', 'route', 'eotn/olafstead_to_umbral_grotto', 'Olafstead to Umbral Grotto'),

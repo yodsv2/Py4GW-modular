@@ -73,6 +73,30 @@ def report_to_the_white_mantle() -> BehaviorTree:
     )
 
 
+def mhenlos_request() -> BehaviorTree:
+    return BT.Sequence(
+        name="Mhenlo's Request",
+        children=[
+            BT.Travel(target_map_id=55),
+            BT.Move(pos=[(1051, 9580)]),
+            BT.Dialog(kind='npc', key='FIRSTWATCH_SERGIO_SKILLS', dialog_ids=['0x81b403'], pos=(328, 9594)),
+            BT.Dialog(kind='npc', key='FIRSTWATCH_SERGIO_SKILLS', dialog_ids=['0x81b401'], pos=(328, 9594)),
+            BT.Move(pos=[(1323, 9767), (731, 11460)]),
+            BT.MoveAndExitMap(pos=(320, 12305), target_map_id=58, move_tolerance=300),
+            BT.Dialog(kind='npc', key='MHENLO', dialog_ids=['0x81b404'], pos=(5658, -17135)),
+            BT.MoveAndExitMap(pos=(6325, -18291), target_map_id=55, move_tolerance=300),
+            BT.Move(pos=[(1338, 2070)]),
+            BT.Dialog(kind='npc', key='JIAJU_TAI', dialog_ids=['0x81b404'], pos=(1444, 1925)),
+            BT.Dialog(kind='npc', key='JIAJU_TAI', dialog_ids=['0x86'], pos=(1444, 1925)),
+            BT.Dialog(kind='npc', key='JIAJU_TAI', dialog_ids=['0x87'], pos=(1444, 1925)),
+            BT.Dialog(kind='npc', key='JIAJU_TAI', dialog_ids=['0x84'], pos=(1444, 1925)),
+            BT.WaitForMapLoad(map_id=290, timeout_ms=10000),
+            BT.Move(pos=[(-5302, 6909)]),
+            BT.Dialog(kind='npc', key='DOCKHAND_QUANGNAI', dialog_ids=['0x81b407'], pos=(-5161, 6940)),
+        ],
+    )
+
+
 def to_kryta_refugees_icecave_journeyend() -> BehaviorTree:
     return BT.Sequence(
         name='To kryta: Refugees',
@@ -172,6 +196,13 @@ ROUTE_POINTS_BY_RECIPE: dict[str, tuple[tuple[float, float], ...]] = {
         (18592.0, 12867.0),
         (21877.0, 9855.0),
     ),
+    'mhenlos_request': (
+        (1051.0, 9580.0),
+        (1323.0, 9767.0),
+        (731.0, 11460.0),
+        (1338.0, 2070.0),
+        (-5302.0, 6909.0),
+    ),
     'to_kryta_refugees_icecave_journeyend': (
         (-10800.0, 35400.0),
         (16456.0, -14885.0),
@@ -226,6 +257,14 @@ RECIPES: tuple[dict[str, object], ...] = (
         'factory': 'report_to_the_white_mantle',
         'source_steps': 9,
         'raw_steps': 9,
+    },
+    {
+        'kind': 'quest',
+        'key': 'prophecies/mhenlos_request',
+        'title': "Mhenlo's Request",
+        'factory': 'mhenlos_request',
+        'source_steps': 17,
+        'raw_steps': 17,
     },
     {
         'kind': 'quest',
