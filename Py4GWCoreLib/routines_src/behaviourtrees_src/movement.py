@@ -78,7 +78,7 @@ def _fail_log(source: str, message: str, message_type=Console.MessageType.Warnin
     ConsoleLog(source, message, message_type, log=True)
 
 
-DEFAULT_MOVE_TOLERANCE = 150.0
+DEFAULT_MOVE_TOLERANCE = 200.0
 
 class BTMovement:
     """
@@ -1002,7 +1002,7 @@ class BTMovement:
     @staticmethod
     def MoveDirect(
         path_points: list[Vec2f],
-        tolerance: float = 50.0,
+        tolerance: float = DEFAULT_MOVE_TOLERANCE,
         timeout_ms: int = 15000,
         stall_threshold_ms: int = 500,
         pause_on_combat: bool = True,
@@ -1049,6 +1049,7 @@ class BTMovement:
     def MoveAndKill(
         coords: Vec2f,
         clear_area_radius: float = Range.Spirit.value,
+        move_tolerance: float = DEFAULT_MOVE_TOLERANCE,
         pause_on_combat: bool = True,
         flag_heroes_to_waypoint: bool = False,
     ) -> BehaviorTree:
@@ -1058,6 +1059,7 @@ class BTMovement:
             BTMovement.Move(
                 x=coords.x,
                 y=coords.y,
+                tolerance=move_tolerance,
                 pause_on_combat=pause_on_combat,
                 flag_heroes_to_waypoint=flag_heroes_to_waypoint,
             ),
@@ -1239,6 +1241,7 @@ class BTMovement:
     def MoveAndKillPath(
         pos: PointOrPath,
         clear_area_radius: float = Range.Spirit.value,
+        move_tolerance: float = DEFAULT_MOVE_TOLERANCE,
         pause_on_combat: bool = True,
         flag_heroes_to_waypoint: bool = False,
     ) -> BehaviorTree:
@@ -1261,6 +1264,7 @@ class BTMovement:
             lambda point: BTMovement.MoveAndKill(
                 coords=point,
                 clear_area_radius=clear_area_radius,
+                move_tolerance=move_tolerance,
                 pause_on_combat=pause_on_combat,
                 flag_heroes_to_waypoint=flag_heroes_to_waypoint,
             ),

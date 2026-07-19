@@ -1930,13 +1930,18 @@ def Move(
 
 
 def MoveDirect(
-    pos: PointOrPath, pause_on_combat: bool | None = None, flag_heroes_to_waypoint: bool = False, log: bool = False
+    pos: PointOrPath,
+    pause_on_combat: bool | None = None,
+    tolerance: float = 200.0,
+    flag_heroes_to_waypoint: bool = False,
+    log: bool = False,
 ) -> BehaviorTree:
     return _movement_with_runtime_pause(
         "MoveDirect",
         lambda resolved_pause: RoutinesBT.Movement.MoveDirect(
             PointPath.as_path(pos),
             pause_on_combat=resolved_pause,
+            tolerance=tolerance,
             flag_heroes_to_waypoint=flag_heroes_to_waypoint,
             log=log,
         ),
@@ -1965,7 +1970,7 @@ def MoveAndExitMap(
     pos: PointOrPath,
     target_map_id: int = 0,
     target_map_name: str = "",
-    move_tolerance: float = 150.0,
+    move_tolerance: float = 200.0,
     flag_heroes_to_waypoint: bool = False,
     log: bool = False,
 ) -> BehaviorTree:
@@ -1979,6 +1984,7 @@ def MoveAndExitMap(
 def MoveAndKill(
     pos: PointOrPath,
     clear_area_radius: float = Range.Spirit.value,
+    move_tolerance: float = 200.0,
     pause_on_combat: bool | None = None,
     flag_heroes_to_waypoint: bool = False,
 ) -> BehaviorTree:
@@ -1987,6 +1993,7 @@ def MoveAndKill(
         lambda resolved_pause: RoutinesBT.Movement.MoveAndKillPath(
             pos=pos,
             clear_area_radius=clear_area_radius,
+            move_tolerance=move_tolerance,
             pause_on_combat=resolved_pause,
             flag_heroes_to_waypoint=flag_heroes_to_waypoint,
         ),
@@ -2327,7 +2334,7 @@ def PatrolUntilEnemyKilled(
 def MoveAndTarget(
     pos: PointOrPath,
     target_distance: float = Range.Adjacent.value,
-    move_tolerance: float = 150.0,
+    move_tolerance: float = 200.0,
     pause_on_combat: bool | None = None,
     flag_heroes_to_waypoint: bool = False,
     log: bool = False,
@@ -2349,7 +2356,7 @@ def MoveAndTarget(
 def MoveAndInteract(
     pos: PointOrPath,
     target_distance: float = Range.Area.value,
-    move_tolerance: float = 150.0,
+    move_tolerance: float = 200.0,
     pause_on_combat: bool | None = None,
     flag_heroes_to_waypoint: bool = False,
     log: bool = False,
@@ -2372,7 +2379,7 @@ def MoveAndInteract(
 def MoveAndInteractWithGadget(
     pos: PointOrPath,
     target_distance: float = Range.Area.value,
-    move_tolerance: float = 150.0,
+    move_tolerance: float = 200.0,
     pause_on_combat: bool | None = None,
     flag_heroes_to_waypoint: bool = False,
     log: bool = False,
@@ -2400,7 +2407,7 @@ def MoveAndAutoDialog(
     pos: PointOrPath,
     buttons: int | list[int] = 0,
     target_distance: float = Range.Nearby.value,
-    move_tolerance: float = 150.0,
+    move_tolerance: float = 200.0,
     pause_on_combat: bool | None = None,
     flag_heroes_to_waypoint: bool = False,
     log: bool = False,
@@ -2427,7 +2434,7 @@ def MoveAndDialog(
     pos: PointOrPath,
     dialog_id: int | str,
     target_distance: float = Range.Nearby.value,
-    move_tolerance: float = 150.0,
+    move_tolerance: float = 200.0,
     pause_on_combat: bool | None = None,
     flag_heroes_to_waypoint: bool = False,
     log: bool = False,
