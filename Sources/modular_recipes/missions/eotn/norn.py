@@ -56,7 +56,7 @@ def curse_of_the_nornbear() -> BehaviorTree:
             BT.Wait(duration_ms=900),
             BT.Wait(duration_ms=100),
             BT.MoveAndKill(pos=(4765, 6711), pause_on_combat=True),
-            BT.WaitForMapLoad(map_id=643, timeout_ms=10000),
+            BT.WaitUntilOnOutpost(timeout_ms=120000)
         ],
     )
 
